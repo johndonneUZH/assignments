@@ -82,7 +82,7 @@ def describe_package_LuxuryCruise(vacation_package: dict):
 LuxuryCruise = {
     'calculate_cost' : calculate_cost_LuxuryCruise,
     'describe_package': describe_package_LuxuryCruise,
-    "_description": "Luxury Cruise vacation",
+    "_description": "Luxury Cruise",
     "_classname": "LuxuryCruise",
     "_parent": VacationPackage
 }
@@ -128,29 +128,13 @@ def make(vacation_class: dict, destination: str, cost_per_day: int, duration_in_
         raise ValueError(f"Invalid vacation package type: {vacation_type}")
     
     # Bool includes_surfing is not passed into the function
-    if vacation_type == "BeachResort":
+    #Bool has_private_suit bis not passed into function
+    if vacation_type == "BeachResort" or vacation_type == "LuxuryCruise":
         if len(args) != 1 or not isinstance(args[0], bool):
             raise ValueError("BeachResort requires 1 additional argument")
         return constructor_func(destination, cost_per_day, duration_in_days, args[0])
 
-    if vacation_type == "LuxuryCruise":
-        if len(args) != 1 or not isinstance(args[0], bool):
-            raise ValueError("LuxuryCruise requires 1 additional argument")
-        return constructor_func(destination, cost_per_day, duration_in_days, args[0])
-    
     return constructor_func(destination, cost_per_day, duration_in_days)
-
-
-    # TODO: Add more checks for the other vacation packages
-    # Bool has_private_suit bis not passed into function
-    
-   
-
-
-
-
-
-
 
 
 
@@ -165,8 +149,9 @@ def main():
     print(call(beach_resort, "describe_package"))
     print(call(beach_resort, "calculate_cost"))
     
-    luxury_cruise = make(LuxuryCruise, "CHINA", 200, 9, False)
+    luxury_cruise = make(LuxuryCruise, "Malta", 200, 14, False)
     print(call(luxury_cruise, "describe_package"))
+    print(call(luxury_cruise, "calculate_cost"))
 
 
 
