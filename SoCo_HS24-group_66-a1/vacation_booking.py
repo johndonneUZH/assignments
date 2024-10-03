@@ -127,8 +127,7 @@ def make(vacation_class: dict, destination: str, cost_per_day: int, duration_in_
     else:
         raise ValueError(f"Invalid vacation package type: {vacation_type}")
     
-    # Bool includes_surfing is not passed into the function
-    #Bool has_private_suit bis not passed into function
+    # Bools includes_surfing or has_private_suit are not passed into make()
     if vacation_type == "BeachResort" or vacation_type == "LuxuryCruise":
         if len(args) != 1 or not isinstance(args[0], bool):
             raise ValueError(f"{vacation_type} requires 1 additional argument")
