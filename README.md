@@ -1,3 +1,3 @@
 # Assignments
 ---
-Project to show team work
+This project aims to show team work
