@@ -131,7 +131,7 @@ def make(vacation_class: dict, destination: str, cost_per_day: int, duration_in_
     #Bool has_private_suit bis not passed into function
     if vacation_type == "BeachResort" or vacation_type == "LuxuryCruise":
         if len(args) != 1 or not isinstance(args[0], bool):
-            raise ValueError("BeachResort requires 1 additional argument")
+            raise ValueError("Vacation Type requires 1 additional argument")
         return constructor_func(destination, cost_per_day, duration_in_days, args[0])
 
     return constructor_func(destination, cost_per_day, duration_in_days)
