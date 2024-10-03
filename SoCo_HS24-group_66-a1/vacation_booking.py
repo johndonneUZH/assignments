@@ -65,9 +65,36 @@ def do_BeachResort(destination: str, cost_per_day: int, duration_in_days: int, i
 # Child class: AdventureTrip
 # TODO: Add implementation for AdventureTrip here
 # --------------------------------------------------------------------
+def calculate_cost_LuxuryCruise(vacation_package: dict):
+    total_cost = vacation_package['cost_per_day'] * vacation_package['duration_in_days']
+    if vacation_package['has_private_suite']:
+        total_cost = total_cost*1.5
+    return total_cost
 
+def describe_package_LuxuryCruise(vacation_package: dict):
+    description = find_method(vacation_package['_class']['_parent'], 'describe_package')(vacation_package)
+    description = description.replace("vacation", vacation_package["_class"]["_description"])
+    if vacation_package['has_private_suite']:
+        return description + " does include a private suite."
+    return description + " does not include a private suite."
 # Child class: LuxuryCruise
-# TODO: Add implementation for LuxuryCruise here
+
+LuxuryCruise = {
+    'calculate_cost' : calculate_cost_LuxuryCruise,
+    'describe_package': describe_package_LuxuryCruise,
+    "_description": "Luxury Cruise vacation",
+    "_classname": "LuxuryCruise",
+    "_parent": VacationPackage
+}
+def do_LuxuryCruise(destination: str, cost_per_day: int, duration_in_days: int, has_private_suite: bool) -> dict:
+    return {
+        "destination": destination,
+        "cost_per_day": cost_per_day,
+        "duration_in_days" : duration_in_days,
+        "has_private_suite" : has_private_suite,
+        "_class": LuxuryCruise
+    }
+
 # --------------------------------------------------------------------
 
 
@@ -106,11 +133,18 @@ def make(vacation_class: dict, destination: str, cost_per_day: int, duration_in_
             raise ValueError("BeachResort requires 1 additional argument")
         return constructor_func(destination, cost_per_day, duration_in_days, args[0])
 
+    if vacation_type == "LuxuryCruise":
+        if len(args) != 1 or not isinstance(args[0], bool):
+            raise ValueError("LuxuryCruise requires 1 additional argument")
+        return constructor_func(destination, cost_per_day, duration_in_days, args[0])
+    
     return constructor_func(destination, cost_per_day, duration_in_days)
 
 
     # TODO: Add more checks for the other vacation packages
-
+    # Bool has_private_suit bis not passed into function
+    
+   
 
 
 
@@ -130,6 +164,9 @@ def main():
     beach_resort = make(BeachResort, "Maldives", 100, 7, True)
     print(call(beach_resort, "describe_package"))
     print(call(beach_resort, "calculate_cost"))
+    
+    luxury_cruise = make(LuxuryCruise, "CHINA", 200, 9, False)
+    print(call(luxury_cruise, "describe_package"))
 
 
 
