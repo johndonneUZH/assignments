@@ -63,7 +63,37 @@ def do_BeachResort(destination: str, cost_per_day: int, duration_in_days: int, i
 
 # --------------------------------------------------------------------
 # Child class: AdventureTrip
-# TODO: Add implementation for AdventureTrip here
+def calculate_cost_AdventureTrip(vacation_package: dict):
+    total_cost = vacation_package['cost_per_day'] * vacation_package['duration_in_days']
+    if vacation_package['difficulty_level'] == "hard":
+        total_cost *= 2
+    return total_cost
+
+def describe_package_AdventureTrip(vacation_package: dict):
+    description = find_method(vacation_package['_class']['_parent'], 'describe_package')(vacation_package)
+    description = description.replace("vacation", vacation_package["_class"]["_description"])
+    if vacation_package['difficulty_level'] == "hard":
+        description += " is considered hard."
+    else:
+        description += " is considered easy."
+    return description
+
+AdventureTrip = {
+    'calculate_cost': calculate_cost_AdventureTrip,
+    'describe_package': describe_package_AdventureTrip,
+    "_description": "Adventure trip",
+    "_classname": "AdventureTrip",
+    "_parent": VacationPackage
+}
+
+def do_AdventureTrip(destination: str, cost_per_day: int, duration_in_days: int, difficulty_level: str) -> dict:
+    return {
+        "destination": destination,
+        "cost_per_day": cost_per_day,
+        "duration_in_days" : duration_in_days,
+        "difficulty_level" : difficulty_level,
+        "_class": AdventureTrip
+    }
 # --------------------------------------------------------------------
 def calculate_cost_LuxuryCruise(vacation_package: dict):
     total_cost = vacation_package['cost_per_day'] * vacation_package['duration_in_days']
@@ -133,11 +163,17 @@ def make(vacation_class: dict, destination: str, cost_per_day: int, duration_in_
             raise ValueError(f"{vacation_type} requires 1 additional argument")
         return constructor_func(destination, cost_per_day, duration_in_days, args[0])
 
+    if vacation_type == "AdventureTrip":
+        if len(args) != 1:
+            raise ValueError(f"{vacation_type} requires 1 additional argument")
+        if args[0] not in ("easy", "hard")  or not isinstance(args[0], str):
+            raise ValueError(f"{vacation_type} is either easy or hard")
+        return constructor_func(destination, cost_per_day, duration_in_days, args[0])
     return constructor_func(destination, cost_per_day, duration_in_days)
 
 
 
-    # TODO: Call the constructors for the vacation packages and return the result
+
     
 # --------------------------------------------------------------------
 
@@ -147,8 +183,12 @@ def main():
     beach_resort = make(BeachResort, "Maldives", 100, 7, True)
     print(call(beach_resort, "describe_package"))
     print(call(beach_resort, "calculate_cost"))
+
+    adventure_trip = make(AdventureTrip, "Macchu Picchu", 50, 8, "hard")
+    print(call(adventure_trip, "describe_package"))
+    print(call(adventure_trip, "calculate_cost"))
     
-    luxury_cruise = make(LuxuryCruise, "Malta", 200, 14)
+    luxury_cruise = make(LuxuryCruise, "Malta", 200, 14, False)
     print(call(luxury_cruise, "describe_package"))
     print(call(luxury_cruise, "calculate_cost"))
 
