@@ -3,34 +3,93 @@ import time
 import argparse
 import re
 
+# --------------------------------------------------------------------
+# FORMATTER
+# --------------------------------------------------------------------
+def printer(test_name, result, status, execution_time, actual=None, expected=None):
+    print(f"==============================")
+    print(f"TEST RESULT: {status}")
+    print(f"TEST NAME: {test_name}")
+    print(f"Execution time: {execution_time:.6f} seconds")
+    
+    if status == "SUCCESS":
+        print(f"Actual: {actual}")
+        print(f"Expected: {expected}")
 
-# Helper function to assert results and print results
+    if status == "ERROR":
+        print(f"An error occurred: {result}")
+    
+    if status == "FAIL":
+        print(f"Expected: {expected}, but got: {actual}")
+    
+    print(f"==============================\n")
+
 def assert_equals(actual, expected, test_name, execution_time):
     if actual == expected:
-        print(f"PASS: {test_name} (Execution time: {execution_time:.6f} seconds)")
+        printer(test_name, actual, "SUCCESS", execution_time, actual, expected)
+    elif expected is None:
+        # Handle error cases when no expected value is provided
+        printer(test_name, actual, "ERROR", execution_time)
     else:
-        print(f"FAIL: {test_name} - Expected {expected}, but got {actual} (Execution time: {execution_time:.6f} seconds)")
-        
+        # Failure case when actual does not match expected
+        printer(test_name, actual, "FAIL", execution_time, actual, expected)
 
-def test_Calculate_cost_BeachResort():
-# Test case 1: Beach resort with surffing included
-    beach_resort_with_surfing = vacation_booking.do_BeachResort("Maldives", 100, 7, True)
-    start_time = time.perf_counter()
-    cost_with_surfing = vacation_booking.call(beach_resort_with_surfing, "calculate_cost")
-    end_time = time.perf_counter()
-    execution_time = end_time - start_time
-    expected_cost = 700 + 100  # 7 days * 100 per day + 100 for surfing
-    assert_equals(cost_with_surfing, expected_cost, "Beach Resort with Surfing", execution_time)
+# --------------------------------------------------------------------
+# SUCCESS
+# --------------------------------------------------------------------
+def test_calculate_cost_BeachResort_with_surfing_success():
+    try:
+        vacation = vacation_booking.do_BeachResort("Maldives", 100, 7, True)
+        start_time = time.perf_counter()
 
-    # Test Case 2: Beach Resort without surfing
-    beach_resort_without_surfing = vacation_booking.do_BeachResort("Maldives", 100, 7, False)
-    start_time = time.perf_counter()
-    cost_without_surfing = vacation_booking.call(beach_resort_without_surfing, "calculate_cost")
-    end_time = time.perf_counter()
-    execution_time = end_time - start_time
-    expected_cost = 700  # 7 days * 100 per day, no surfing surcharge
-    assert_equals(cost_without_surfing, expected_cost, "Beach Resort without Surfing", execution_time)   
+        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        expected_cost = 700 + 100  # 7 days * 100 per day + 100 for surfing
 
+        end_time = time.perf_counter()
+        execution_time = end_time - start_time
+        assert_equals(actual_cost, expected_cost, "Beach Resort with Surfing", execution_time)
+    except Exception as e:
+        assert_equals(None, None, "Beach Resort with Surfing", 0)  # In case of unexpected errors
+
+# --------------------------------------------------------------------
+# FAILURE
+# --------------------------------------------------------------------
+def test_calculate_cost_BeachResort_with_surfing_failure():
+    try:
+        vacation = vacation_booking.do_BeachResort("Maldives", 100, 7, False)
+        start_time = time.perf_counter()
+
+
+        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        expected_cost = 800  # Wrong expectation deliberately
+
+        end_time = time.perf_counter()
+        execution_time = end_time - start_time
+        assert_equals(actual_cost, expected_cost, "BeachResort Failure", execution_time)
+    except Exception as e:
+        assert_equals(e, None, "BeachResort Failure", 0)
+
+# --------------------------------------------------------------------
+# ERROR
+# --------------------------------------------------------------------
+def test_calculate_cost_BeachResort_with_surfing_error():
+    try:
+        vacation = vacation_booking.do_BeachResort("Maldives", 100, 7) # Deliberately missing the surfing argument
+        start_time = time.perf_counter()
+
+
+        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        expected_cost = 700  # 7 days * 100 per day
+
+        end_time = time.perf_counter()
+        execution_time = end_time - start_time
+        assert_equals(actual_cost, expected_cost, "BeachResort Success", execution_time)
+    except Exception as e:
+        assert_equals(e, None, "BeachResort Failure", 0)
+
+# --------------------------------------------------------------------
+# UTILITY FUNCTIONS
+# --------------------------------------------------------------------
 def run_tests(pattern=None):
     
     print(f"Running selected tests with the patten {pattern}...\n" if pattern else "Running all tests...\n")
@@ -72,7 +131,9 @@ def parse_arguments():
         pattern = None
     return pattern
             
-    
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
+
 def main():
     args = parse_arguments()
     run_tests(pattern=args)
