@@ -26,6 +26,8 @@ def ab_VacationPackage(destination: str, cost_per_day: int, duration_in_days: in
     }
 
 # --------------------------------------------------------------------
+# Child class: BEACH RESORT
+# --------------------------------------------------------------------
 
 def calculate_cost_BeachResort(vacation_package: dict):
     total_cost = vacation_package['cost_per_day'] * vacation_package['duration_in_days']
@@ -40,7 +42,6 @@ def describe_package_BeachResort(vacation_package: dict):
         description += " includes surfing"
     return description
 
-# Child class: BeachResort
 BeachResort = {
     'calculate_cost': calculate_cost_BeachResort,
     'describe_package': describe_package_BeachResort,
@@ -58,11 +59,10 @@ def do_BeachResort(destination: str, cost_per_day: int, duration_in_days: int, i
         "_class": BeachResort
     }
 
-
-
-
 # --------------------------------------------------------------------
-# Child class: AdventureTrip
+# Child class: ADVENTURE TRIP
+# --------------------------------------------------------------------
+
 def calculate_cost_AdventureTrip(vacation_package: dict):
     total_cost = vacation_package['cost_per_day'] * vacation_package['duration_in_days']
     if vacation_package['difficulty_level'] == "hard":
@@ -94,7 +94,10 @@ def do_AdventureTrip(destination: str, cost_per_day: int, duration_in_days: int,
         "difficulty_level" : difficulty_level,
         "_class": AdventureTrip
     }
+# -------------------------------------------------------------------
+# Child class: LUXURY CRUISE
 # --------------------------------------------------------------------
+
 def calculate_cost_LuxuryCruise(vacation_package: dict):
     total_cost = vacation_package['cost_per_day'] * vacation_package['duration_in_days']
     if vacation_package['has_private_suite']:
@@ -107,7 +110,6 @@ def describe_package_LuxuryCruise(vacation_package: dict):
     if vacation_package['has_private_suite']:
         return description + " does include a private suite."
     return description + " does not include a private suite."
-# Child class: LuxuryCruise
 
 LuxuryCruise = {
     'calculate_cost' : calculate_cost_LuxuryCruise,
@@ -116,6 +118,7 @@ LuxuryCruise = {
     "_classname": "LuxuryCruise",
     "_parent": VacationPackage
 }
+
 def do_LuxuryCruise(destination: str, cost_per_day: int, duration_in_days: int, has_private_suite: bool) -> dict:
     return {
         "destination": destination,
@@ -126,15 +129,15 @@ def do_LuxuryCruise(destination: str, cost_per_day: int, duration_in_days: int, 
     }
 
 # --------------------------------------------------------------------
+# UTILITY FUNCTIONS
+# --------------------------------------------------------------------
 
-
-
-
-
-# Utility functions
 def call(vacation_package: dict, method_name: str):
-    method = find_method(vacation_package['_class'], method_name)
-    return method(vacation_package)
+    try:
+        method = find_method(vacation_package['_class'], method_name)
+        return method(vacation_package)
+    except Exception as e:
+        raise RuntimeError(f"Error when calling {method_name} on {vacation_package['_class']['_classname']}: {e}")
 
 def find_method(cls: dict, method_name: str):
     if method_name in cls:
@@ -171,13 +174,9 @@ def make(vacation_class: dict, destination: str, cost_per_day: int, duration_in_
         return constructor_func(destination, cost_per_day, duration_in_days, args[0])
     return constructor_func(destination, cost_per_day, duration_in_days)
 
-
-
-
-    
 # --------------------------------------------------------------------
-
-
+# --------------------------------------------------------------------
+# --------------------------------------------------------------------
 
 def main():
     beach_resort = make(BeachResort, "Maldives", 100, 7, True)
