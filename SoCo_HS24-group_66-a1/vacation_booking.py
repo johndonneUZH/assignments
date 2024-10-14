@@ -1,3 +1,6 @@
+#global variables
+booked_vacations = []
+
 # Abstract methods for subclasses to implement
 def calculate_cost(vacation_package: dict):
     return NotImplementedError("Abstract Class: This method must be implemented by a subclass")
@@ -51,13 +54,17 @@ BeachResort = {
 }
 
 def do_BeachResort(destination: str, cost_per_day: int, duration_in_days: int, includes_surfing: bool) -> dict:
-    return {
+    vacation = {
         "destination": destination,
         "cost_per_day": cost_per_day,
         "duration_in_days" : duration_in_days,
         "includes_surfing" : includes_surfing,
         "_class": BeachResort
     }
+    global booked_vacations
+    booked_vacations.append(vacation)
+    return vacation
+
 
 # --------------------------------------------------------------------
 # Child class: ADVENTURE TRIP
@@ -87,13 +94,16 @@ AdventureTrip = {
 }
 
 def do_AdventureTrip(destination: str, cost_per_day: int, duration_in_days: int, difficulty_level: str) -> dict:
-    return {
+    vacation = {
         "destination": destination,
         "cost_per_day": cost_per_day,
         "duration_in_days" : duration_in_days,
         "difficulty_level" : difficulty_level,
         "_class": AdventureTrip
     }
+    global booked_vacations
+    booked_vacations.append(vacation)
+    return vacation
 # -------------------------------------------------------------------
 # Child class: LUXURY CRUISE
 # --------------------------------------------------------------------
@@ -120,13 +130,17 @@ LuxuryCruise = {
 }
 
 def do_LuxuryCruise(destination: str, cost_per_day: int, duration_in_days: int, has_private_suite: bool) -> dict:
-    return {
+    vacation = {
         "destination": destination,
         "cost_per_day": cost_per_day,
         "duration_in_days" : duration_in_days,
         "has_private_suite" : has_private_suite,
         "_class": LuxuryCruise
     }
+    global booked_vacations
+    booked_vacations.append(vacation)
+    return vacation
+
 
 # --------------------------------------------------------------------
 # UTILITY FUNCTIONS
@@ -174,11 +188,51 @@ def make(vacation_class: dict, destination: str, cost_per_day: int, duration_in_
         return constructor_func(destination, cost_per_day, duration_in_days, args[0])
     return constructor_func(destination, cost_per_day, duration_in_days)
 
+
+
+# --------------------------------------------------------------------
+# TASK 2
+# --------------------------------------------------------------------
+
+def calculate_total_cost(term = None):
+    global booked_vacations
+    if term:
+        BookedVacations = search_term(term)
+    else:
+        BookedVacations = booked_vacations
+    total = 0
+    for item in BookedVacations:
+        total += call(item, "calculate_cost")
+    return total
+
+
+
+def extract_total_vacation_summary(term = None):
+    global booked_vacations
+    if term:
+        BookedVacations = search_term(term)
+    else:
+        BookedVacations = booked_vacations
+    description = ""
+    for item in BookedVacations:
+        description = description + call(item, "describe_package") + "\n"
+    return description
+
+def search_term(term):
+    global booked_vacations
+    BookedVacations = []
+    for vacation in booked_vacations:
+        if term.lower() in str(vacation["_class"]).lower():
+            BookedVacations.append(vacation)
+    return BookedVacations
+
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
 
 def main():
+    
+    
     beach_resort = make(BeachResort, "Maldives", 100, 7, True)
     print(call(beach_resort, "describe_package"))
     print(call(beach_resort, "calculate_cost"))
@@ -192,9 +246,12 @@ def main():
     print(call(luxury_cruise, "calculate_cost"))
 
 
-
+    
+    print(calculate_total_cost())
+    print(calculate_total_cost("Luxury"))
+    print(extract_total_vacation_summary())
+    print(extract_total_vacation_summary("Luxury"))
 
 
 if __name__ == "__main__":
     main()
-
