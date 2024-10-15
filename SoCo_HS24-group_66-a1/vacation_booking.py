@@ -194,13 +194,11 @@ def make(vacation_class: dict, destination: str, cost_per_day: int, duration_in_
 # TASK 2
 # --------------------------------------------------------------------
 
+
 def calculate_total_cost(term = None):
     global booked_vacations
-    if term:
-        BookedVacations = search_term(term)
-    else:
-        BookedVacations = booked_vacations
     total = 0
+    BookedVacations = search_term(term) if term else booked_vacations
     for item in BookedVacations:
         total += call(item, "calculate_cost")
     return total
@@ -209,23 +207,27 @@ def calculate_total_cost(term = None):
 
 def extract_total_vacation_summary(term = None):
     global booked_vacations
-    if term:
-        BookedVacations = search_term(term)
-    else:
-        BookedVacations = booked_vacations
     description = ""
+    BookedVacations = search_term(term) if term else booked_vacations
     for item in BookedVacations:
         description = description + call(item, "describe_package") + "\n"
     return description
 
 def search_term(term):
     global booked_vacations
-    BookedVacations = []
+    selected_vacations = []
     for vacation in booked_vacations:
-        if term.lower() in str(vacation["_class"]).lower():
-            BookedVacations.append(vacation)
-    return BookedVacations
+        if term.lower() in (str(vacation["destination"]).lower() or str(vacation["destination"]).lower()):
+            selected_vacations.append(vacation)
+    return selected_vacations
 
+VacationBookingSummary = {
+    'calculate_total_cost' : calculate_total_cost,
+    'extract_total_vacation_summary': extract_total_vacation_summary,
+    
+    "_classname": "VacationBookingSummary",
+    "_parent": None
+}
 
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
@@ -251,8 +253,9 @@ def main():
     print(calculate_total_cost())
     print(calculate_total_cost("Luxury"))
     print(extract_total_vacation_summary())
-    print(extract_total_vacation_summary("Luxury"))
-
+    print(extract_total_vacation_summary("Malta"))
+    print(extract_total_vacation_summary("Adventure"))
+    print(extract_total_vacation_summary())
 
 if __name__ == "__main__":
     main()
