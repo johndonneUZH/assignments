@@ -1,4 +1,5 @@
 import vacation_booking
+import inspect
 import time
 import argparse
 import re
@@ -35,9 +36,10 @@ def assert_equals(actual, expected, test_name, execution_time):
         printer(test_name, actual, "FAIL", execution_time, actual, expected)
 
 # --------------------------------------------------------------------
-# SUCCESS
+# BEACH SUCCESS
 # --------------------------------------------------------------------
 def test_calculate_cost_BeachResort_with_surfing_success():
+    test_name = inspect.currentframe().f_code.co_name
     try:
         vacation = vacation_booking.do_BeachResort("Maldives", 100, 7, True)
         start_time = time.perf_counter()
@@ -47,14 +49,15 @@ def test_calculate_cost_BeachResort_with_surfing_success():
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, "Beach Resort with Surfing", execution_time)
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(None, None, "Beach Resort with Surfing", 0)  # In case of unexpected errors
+        assert_equals(None, None, test_name, 0)  # In case of unexpected errors
 
 # --------------------------------------------------------------------
-# FAILURE
+# BEACH FAILURE
 # --------------------------------------------------------------------
 def test_calculate_cost_BeachResort_with_surfing_failure():
+    test_name = inspect.currentframe().f_code.co_name
     try:
         vacation = vacation_booking.do_BeachResort("Maldives", 100, 7, False)
         start_time = time.perf_counter()
@@ -65,14 +68,15 @@ def test_calculate_cost_BeachResort_with_surfing_failure():
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, "BeachResort Failure", execution_time)
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(e, None, "BeachResort Failure", 0)
+        assert_equals(e, None, test_name, 0)
 
 # --------------------------------------------------------------------
-# ERROR
+# BEACH ERROR
 # --------------------------------------------------------------------
 def test_calculate_cost_BeachResort_with_surfing_error():
+    test_name = inspect.currentframe().f_code.co_name
     try:
         vacation = vacation_booking.do_BeachResort("Maldives", 100, 7) # Deliberately missing the surfing argument
         start_time = time.perf_counter()
@@ -83,14 +87,15 @@ def test_calculate_cost_BeachResort_with_surfing_error():
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, "BeachResort Success", execution_time)
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(e, None, "BeachResort Error-Failure", 0)
+        assert_equals(e, None, test_name, 0)
 
 # --------------------------------------------------------------------
-# SUCCESS
+# ADVENTURE SUCCESS
 # --------------------------------------------------------------------
 def test_calculate_cost_AdventureTrip_hard_success():
+    test_name = inspect.currentframe().f_code.co_name
     try:
         vacation = vacation_booking.do_AdventureTrip("Maldives", 100, 7, "hard")
         start_time = time.perf_counter()
@@ -100,14 +105,15 @@ def test_calculate_cost_AdventureTrip_hard_success():
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, "AdventureTrip Success", execution_time)
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(None, None, "Adventure trip hard", 0)  # In case of unexpected errors
+        assert_equals(None, None, test_name, 0)  # In case of unexpected errors
 
 # --------------------------------------------------------------------
-# FAILURE
+# ADVENTURE FAILURE
 # --------------------------------------------------------------------
 def test_calculate_cost_AdventureTrip_hard_failure():
+    test_name = inspect.currentframe().f_code.co_name
     try:
         vacation = vacation_booking.do_AdventureTrip("Maldives", 100, 7, "easy")
         start_time = time.perf_counter()
@@ -118,14 +124,15 @@ def test_calculate_cost_AdventureTrip_hard_failure():
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, "AdventureTrip Failure", execution_time)
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(e, None, "AdventureTrip Failure", 0)
+        assert_equals(e, None, test_name, 0)
 
 # --------------------------------------------------------------------
-# ERROR
+# ADVENTURE ERROR
 # --------------------------------------------------------------------
 def test_calculate_cost_AdventureTrip_hard_error():
+    test_name = inspect.currentframe().f_code.co_name
     try:
         vacation = vacation_booking.do_AdventureTrip("Maldives", 100, 7) # Deliberately missing the surfing argument
         start_time = time.perf_counter()
@@ -136,15 +143,16 @@ def test_calculate_cost_AdventureTrip_hard_error():
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, "AdventureTrip Success", execution_time)
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(e, None, "AdventureTrip Error-Failure", 0)
+        assert_equals(e, None, test_name, 0)
 
 
 # --------------------------------------------------------------------
-# SUCCESS
+# LUXURY SUCCESS
 # --------------------------------------------------------------------
 def test_calculate_cost_LuxuryCruise_has_private_suite_success():
+    test_name = inspect.currentframe().f_code.co_name
     try:
         vacation = vacation_booking.do_LuxuryCruise("Maldives", 100, 7, True)
         start_time = time.perf_counter()
@@ -154,14 +162,15 @@ def test_calculate_cost_LuxuryCruise_has_private_suite_success():
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, "Luxury Cruise with private suite", execution_time)
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(None, None, "Luxury Cruise with private suite", 0)  # In case of unexpected errors
+        assert_equals(None, None, test_name, 0)  # In case of unexpected errors
 
 # --------------------------------------------------------------------
-# FAILURE
+# LUXURY FAILURE
 # --------------------------------------------------------------------
 def test_calculate_cost_LuxuryCruise_has_private_suite_failure():
+    test_name = inspect.currentframe().f_code.co_name
     try:
         vacation = vacation_booking.do_LuxuryCruise("Maldives", 100, 7, False)
         start_time = time.perf_counter()
@@ -172,14 +181,15 @@ def test_calculate_cost_LuxuryCruise_has_private_suite_failure():
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, "LuxuryCruise Failure", execution_time)
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(e, None, "LuxuryCruise Failure", 0)
+        assert_equals(e, None, test_name, 0)
 
 # --------------------------------------------------------------------
-# ERROR
+# LUXURY ERROR
 # --------------------------------------------------------------------
 def test_calculate_cost_LuxuryCruise_has_private_suite_error():
+    test_name = inspect.currentframe().f_code.co_name
     try:
         vacation = vacation_booking.do_LuxuryCruise("Maldives", 100, 7) # Deliberately missing the surfing argument
         start_time = time.perf_counter()
@@ -190,9 +200,9 @@ def test_calculate_cost_LuxuryCruise_has_private_suite_error():
 
         end_time = time.perf_counter()
         execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, "LuxuryCruise Success", execution_time)
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(e, None, "LuxuryCruise Error-Failure", 0)
+        assert_equals(e, None, test_name, 0)
 
 
 # --------------------------------------------------------------------
@@ -205,23 +215,27 @@ def run_tests(pattern=None):
     regex = re.compile(pattern, re.IGNORECASE) if pattern else None
     
     tests_executed = False  # Flag to track if any tests were executed
+    total_tests = 0  # Total number of tests
+    actual_tests = 0  # Number of tests actually executed
 
     # Iterate over all global variables to find tests
     for name, func in globals().items():
         if callable(func) and name.startswith("test"):
+
+            total_tests += 1
+
             # If a pattern is provided, check if the function name matches the pattern
             if regex and not regex.search(name):
                 continue  # Skip tests that do not match the pattern
             func()  # Call the test function
             tests_executed = True  # At least one test has been executed
+            actual_tests += 1  # Increment the number of tests executed
 
     # Check if any tests were executed
     if not tests_executed:
         raise ValueError(f"No tests found matching the pattern: {pattern}")
     else:
-        print("Selected tests executed." if pattern else "All tests executed.")      
-
-
+        print(f"Selected tests executed ({actual_tests}/{total_tests})." if pattern else f"All tests executed. ({actual_tests}/{total_tests}).")      
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Run a sleection of vacation package tests.")
