@@ -1,8 +1,4 @@
-from vacation_booking import make
-from vacation_booking import BeachResort
-from vacation_booking import LuxuryCruise
-from vacation_booking import AdventureTrip
-from vacation_booking import call
+from vacation_booking import make, call, BeachResort, LuxuryCruise, AdventureTrip
 import inspect
 import time
 import argparse
