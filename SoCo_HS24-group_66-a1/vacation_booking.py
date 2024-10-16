@@ -1,6 +1,9 @@
+# --------------------------------------------------------------------
+# AUTHORS: SoCo_HS24-group_66-a1
+# --------------------------------------------------------------------
+
 import re
 from collections import defaultdict
-# Authors: SoCo_HS24-group_66-a1
 
 # --------------------------------------------------------------------
 # Parent class: VACATION PACKAGE
@@ -329,8 +332,6 @@ def make(vacation_class: dict, destination: str, *args):
     add_to_vacation_summaries(vacation)
     
     return vacation
-
-
 
 # --------------------------------------------------------------------
 # MAIN
