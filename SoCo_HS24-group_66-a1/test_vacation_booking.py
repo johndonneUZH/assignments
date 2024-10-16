@@ -1,4 +1,8 @@
-import vacation_booking
+from vacation_booking import make
+from vacation_booking import BeachResort
+from vacation_booking import LuxuryCruise
+from vacation_booking import AdventureTrip
+from vacation_booking import call
 import inspect
 import time
 import argparse
@@ -41,11 +45,11 @@ def assert_equals(actual, expected, test_name, execution_time):
 def test_calculate_cost_BeachResort_with_surfing_success():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = vacation_booking.make(vacation_booking.BeachResort, "Maldives", 100, 7, True)
+        vacation = make(BeachResort, "Maldives", 100, 7, True)
 
         start_time = time.perf_counter()
 
-        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        actual_cost = call(vacation, "calculate_cost")
         expected_cost = 700 + 100  # 7 days * 100 per day + 100 for surfing
 
         end_time = time.perf_counter()
@@ -60,11 +64,11 @@ def test_calculate_cost_BeachResort_with_surfing_success():
 def test_calculate_cost_BeachResort_with_surfing_failure():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = vacation_booking.make(vacation_booking.BeachResort, "Maldives", 100, 7, False)
+        vacation = make(BeachResort, "Maldives", 100, 7, False)
         start_time = time.perf_counter()
 
 
-        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        actual_cost = call(vacation, "calculate_cost")
         expected_cost = 800  # Wrong expectation deliberately
 
         end_time = time.perf_counter()
@@ -79,11 +83,11 @@ def test_calculate_cost_BeachResort_with_surfing_failure():
 def test_calculate_cost_BeachResort_with_surfing_error():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = vacation_booking.make(vacation_booking.BeachResort, "Maldives", 100, 7,) # Deliberately missing the surfing argument
+        vacation = make(BeachResort, "Maldives", 100, 7,) # Deliberately missing the surfing argument
         start_time = time.perf_counter()
 
 
-        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        actual_cost = call(vacation, "calculate_cost")
         expected_cost = 700  # 7 days * 100 per day
 
         end_time = time.perf_counter()
@@ -98,10 +102,10 @@ def test_calculate_cost_BeachResort_with_surfing_error():
 def test_calculate_cost_AdventureTrip_hard_success():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = vacation_booking.make(vacation_booking.AdventureTrip, "Maldives", 100, 7, "hard")
+        vacation = make(AdventureTrip, "Maldives", 100, 7, "hard")
         start_time = time.perf_counter()
 
-        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        actual_cost = call(vacation, "calculate_cost")
         expected_cost = (700)*2 
 
         end_time = time.perf_counter()
@@ -116,11 +120,11 @@ def test_calculate_cost_AdventureTrip_hard_success():
 def test_calculate_cost_AdventureTrip_hard_failure():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = vacation_booking.make(vacation_booking.AdventureTrip, "Maldives", 100, 7, "easy")
+        vacation = make(AdventureTrip, "Maldives", 100, 7, "easy")
         start_time = time.perf_counter()
 
 
-        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        actual_cost = call(vacation, "calculate_cost")
         expected_cost = 1400  # Wrong expectation deliberately
 
         end_time = time.perf_counter()
@@ -135,11 +139,11 @@ def test_calculate_cost_AdventureTrip_hard_failure():
 def test_calculate_cost_AdventureTrip_hard_error():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = vacation_booking.make(vacation_booking.AdventureTrip, "Maldives", 100, 7 ) # Deliberately missing the surfing argument
+        vacation = make(AdventureTrip, "Maldives", 100, 7 ) # Deliberately missing the surfing argument
         start_time = time.perf_counter()
 
 
-        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        actual_cost = call(vacation, "calculate_cost")
         expected_cost = 700 
 
         end_time = time.perf_counter()
@@ -155,10 +159,10 @@ def test_calculate_cost_AdventureTrip_hard_error():
 def test_calculate_cost_LuxuryCruise_has_private_suite_success():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = vacation_booking.make(vacation_booking.LuxuryCruise, "Maldives", 100, 7, True)
+        vacation = make(LuxuryCruise, "Maldives", 100, 7, True)
         start_time = time.perf_counter()
 
-        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        actual_cost = call(vacation, "calculate_cost")
         expected_cost = 700*1.5
 
         end_time = time.perf_counter()
@@ -173,11 +177,11 @@ def test_calculate_cost_LuxuryCruise_has_private_suite_success():
 def test_calculate_cost_LuxuryCruise_has_private_suite_failure():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = vacation_booking.make(vacation_booking.LuxuryCruise, "Maldives", 100, 7, False)
+        vacation = make(LuxuryCruise, "Maldives", 100, 7, False)
         start_time = time.perf_counter()
 
 
-        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        actual_cost = call(vacation, "calculate_cost")
         expected_cost = 800  # Wrong expectation deliberately
 
         end_time = time.perf_counter()
@@ -192,11 +196,11 @@ def test_calculate_cost_LuxuryCruise_has_private_suite_failure():
 def test_calculate_cost_LuxuryCruise_has_private_suite_error():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = vacation_booking.make(vacation_booking.LuxuryCruise, "Maldives", 100, 7) # Deliberately missing the surfing argument
+        vacation = make(LuxuryCruise, "Maldives", 100, 7) # Deliberately missing the surfing argument
         start_time = time.perf_counter()
 
 
-        actual_cost = vacation_booking.call(vacation, "calculate_cost")
+        actual_cost = call(vacation, "calculate_cost")
         expected_cost = 700 
 
         end_time = time.perf_counter()
