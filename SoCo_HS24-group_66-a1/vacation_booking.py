@@ -163,9 +163,10 @@ def findSearchTerm(vacation: dict) -> str:
     
     return vacation_type
 
-def do_VacationBookingSummary(searchTerm=None) -> dict:
+def do_VacationBookingSummary(name: str, searchTerm=None) -> dict:
     return {
         "_class": VacationBookingSummary,
+        "_objectName": name,
         "_searchTerm": searchTerm
     }
 
@@ -177,6 +178,7 @@ def calculate_total_cost(vacation: dict):
         total_cost = 0
         vacation_summaries = find_method(VacationPackage, 'mydict')
         searchTerm = vacation['_searchTerm']
+        object_name = vacation['_objectName']
 
         # Calculate the total cost of all vacations if no search term is provided
         if not searchTerm:
@@ -188,11 +190,11 @@ def calculate_total_cost(vacation: dict):
         else:
             vacation_type = findSearchTerm(vacation)        
             if not vacation_type:
-                return "No vacation type found for the search term"
+                return 0
             
             for vacation in vacation_summaries[vacation_type]:
                 total_cost += call(vacation, 'calculate_cost')        
-        return f'Total cost of all vacations: {total_cost}'
+        return float(f"{total_cost:.2f}")
     
     except Exception as e:
         raise RuntimeError(f"Error when calculating total cost: {e}")
@@ -204,19 +206,22 @@ def extract_total_vacation_summary(vacation: dict) -> str:
     try:
         vacation_summaries = find_method(VacationPackage, 'mydict')
         searchTerm = vacation['_searchTerm']
+        object_name = vacation['_objectName']
 
         # Pretty print the vacation summaries
         separator_title = '=' * 20
-        separator_normal = '-' * 20
+        separator_normal = '-' * 21
+        nf_separator = '§' * 10
+        not_found = f"\n{nf_separator} No vacation type found for '{searchTerm}' {nf_separator}"
 
         # Initialize the result list
         result = []
-        result.append('\n{}VACATION SUMMARIES{}\n'.format(separator_title, separator_title))
+        result.append('\n{} {} {}\n'.format(separator_title, object_name.upper(), separator_title))
                 
         # Loop through the vacation summaries if no search term is provided
         if not searchTerm:
             for vacation_type, vacations in vacation_summaries.items():
-                result.append(f"{separator_normal}{vacation_type.upper()}S{separator_normal}")
+                result.append(f"{separator_normal} {vacation_type.upper()}S {separator_normal}")
                 for vacation in vacations:
                     result.append(call(vacation, 'describe_package'))
                 result.append('\n')
@@ -226,12 +231,14 @@ def extract_total_vacation_summary(vacation: dict) -> str:
             vacation_type = findSearchTerm(vacation)
             
             if not vacation_type:
-                return "No vacation type found for the search term"
+                return not_found
 
-            result.append(f"{separator_normal}{vacation_type.upper()}S{separator_normal}")
+            result.append(f"{separator_normal} {vacation_type.upper()}S {separator_normal}")
             for vacation in vacation_summaries[vacation_type]:
                 result.append(call(vacation, 'describe_package'))
             result.append('\n')    
+
+        result.append(f"{object_name.upper()} | Total cost: ${call(vacation, 'calculate_cost'):.2f}")
 
         return '\n'.join(result)
     
@@ -298,7 +305,7 @@ def make(vacation_class: dict, destination: str, *args):
             raise ValueError(f"{vacation_type} requires 0 or 1 additional arguments")
         searchTerm = args[0] if len(args) == 1 else None
         constructor_func = dict_packages[vacation_type]
-        return constructor_func(searchTerm)
+        return constructor_func(destination, searchTerm)
 
     # Check for valid number of arguments based on vacation type
     constructor_func = dict_packages.get(vacation_type)
@@ -350,16 +357,14 @@ def main():
     luxury_cruise2 = make(LuxuryCruise, "Greece", 400, 4, False)
     # print(call(luxury_cruise, "describe_package"))
     # print(call(luxury_cruise, "calculate_cost"))
-    vacation_summaries = make(VacationBookingSummary, "VacationBookingSummary", 'bea')
-    print(vacation_summaries['_searchTerm'])
+    vacation_summaries = make(VacationBookingSummary, "Total Vacations")
+    beach_summaries = make(VacationBookingSummary, "Beach Collections", 'bea')
 
     print(call(vacation_summaries, "describe_package"))
-    print(call(vacation_summaries, "calculate_cost"))
 
     beach_resort3 = make(BeachResort, "Art", 110, 9, False)
 
-    print(call(vacation_summaries, "describe_package"))
-    print(call(vacation_summaries, "calculate_cost"))
+    print(call(beach_summaries, "describe_package"))
 
 
 
