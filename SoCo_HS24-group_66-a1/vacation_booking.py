@@ -193,7 +193,7 @@ def calculate_total_cost(vacation: dict):
                 return 0
             
             for vacation in vacation_summaries[vacation_type]:
-                total_cost += call(vacation, 'calculate_cost')        
+                total_cost += call(vacation, 'calculate_cost')
         return float(f"{total_cost:.2f}")
     
     except Exception as e:
@@ -323,7 +323,7 @@ def make(vacation_class: dict, destination: str, *args):
                 raise ValueError(f"{vacation_type} requires exactly 3 arguments: destination, cost_per_day, duration_in_days, and difficulty ('easy' or 'hard')")
             cost_per_day, duration_in_days, difficulty = args
         case _:
-            raise KeyError(f"Invalid vacation type: {vacation_type}")
+            raise ValueError(f"Invalid vacation type: {vacation_type}")
 
     # Perform common validation
     if not isinstance(cost_per_day, int) or cost_per_day < 0:
@@ -345,28 +345,12 @@ def make(vacation_class: dict, destination: str, *args):
 # --------------------------------------------------------------------
 
 def main():
-    beach_resort = make(BeachResort, "Maldives", 100, 7, True)
-    # print(call(beach_resort, "describe_package"))
-    # print(call(beach_resort, "calculate_cost"))
-
-    adventure_trip = make(AdventureTrip, "Macchu Picchu", 50, 8, "hard")
-    # print(call(adventure_trip, "describe_package"))
-    # print(call(adventure_trip, "calculate_cost"))
-
-    luxury_cruise = make(LuxuryCruise, "Malta", 200, 14, True)
-    luxury_cruise2 = make(LuxuryCruise, "Greece", 400, 4, False)
-    # print(call(luxury_cruise, "describe_package"))
-    # print(call(luxury_cruise, "calculate_cost"))
+    vacation1 = make(BeachResort, "Maldives", 100, 7, True)
+    vacation2 = make(AdventureTrip, "Greece", 120, 4, "hard")
+    vacation3 = make(LuxuryCruise, "Caribbean", 150, 10, False)
+        
     vacation_summaries = make(VacationBookingSummary, "Total Vacations")
-    beach_summaries = make(VacationBookingSummary, "Beach Collections", 'bea')
-
-    print(call(vacation_summaries, "describe_package"))
-
-    beach_resort3 = make(BeachResort, "Art", 110, 9, False)
-
-    print(call(beach_summaries, "describe_package"))
-
-
+    print(call(vacation_summaries, "calculate_cost"))
 
 if __name__ == "__main__":
     main()
