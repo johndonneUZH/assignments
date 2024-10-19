@@ -64,25 +64,108 @@ will mactch all the objects of the class BeachResort
 - We use the find_method to get the current vacation summaries and append the new vacation to the relevant list within the summaries.
 - This function is used in *make()*, whenever a vacation is created
 
-TO FINISH HERE
-### Utility Function
+**remove_from_vacation_summaries()**
+- We use the find_method to get the current vacation summaries and remove the selected vacation from any vacation type in the relevant list within the object vacation_summaries.
+- The function relies on defaultdict structure so it can safely access the list of vacations by type without needing to check for the existence of a list. 
+
+  
+### Utility Functions
 **call()**
 - It retrieves methods by name rather than calling them directly, enabling more flexibility.
 Defensive Programming: The function validates input types to ensure robustness.
 Exception Handling: It catches all exceptions and wraps them in a RuntimeError for consistent error messages.
-Pros:
-Flexible design: Allows adding or changing methods without altering the core logic.
-Centralized error handling: Makes debugging easier.
-Cons:
-Performance impact: Reflection-like behavior (dynamic calls) can be slower than direct method invocations.
-Limited static analysis: IDEs and linters may not detect errors in method names at compile time.
+
+   - Pros:
+     
+        Flexible design: Allows adding or changing methods without altering the core logic.  
+        Centralized error handling: Makes debugging easier.  
+
+   - Cons:
+     
+        Performance impact: Reflection-like behavior (dynamic calls) can be slower than direct method invocations.  
+        Limited static analysis: IDEs and linters may not detect errors in method names at compile time.
 
 
+**find_method()**
+- It recursively retrieves a method from a class by searching its hierarchy, so if the method is not found in the current class, it looks for the method in the parent class.
+  Defensive Programming: The function ensures that method names are searched across the parent-child relationship, avoiding potential issues where methods might be missed due to class inheritance.
+  Exception Handling: If the method is not found after traversing the entire class hierarchy, it raises a NotImplementedError.
+  
+   - Pros:
+     
+        Supports class hierarchy: By looking into the parent's classes, it ensures that even the inherited methods can be accessed and makes it easier to retrieve methods from subclasses without explicitly navigating the hierarchy.  
+
+   - Cons:
+     
+        Performance impact: The fact that it traverses the class hierarchy recursively, introduces performance costs.
+  
+**Make()**
+- This function serves as the creator, that dynamically creates instances of different vacation types (eg. BeachResort, LuxuryCruise). It uses the provided vacation type information to construct the object with the given parameters and adds it to the vacation summaries.
+  Defensive Programming:  It validates both the class of the vacation package and the input parameters, ensuring that invalid input or incorrect types are caught.
+  Exception Handling: The function checks for invalid argument counts and incorrect vacation types, raising informative ValueError exceptions.
+   - Pros:
+     
+        The creator pattern: It is intuitive and easy to have just one big make() function that allows different vacation types to be created through a single interface. It is also done so that it can be easily extended for new vacation types.   
+
+   - Cons:
+     
+        Rigid checks for functions and errors: If the signature of vacation constructures changes, it may require to modify the function make(), also the strict validation might lead to extensive exception handling code, which could become harder to maintain if more vacation types are added.
 ---
 
 ## Tests : test_vacation_booking.py
 
 ### Description
-TODO
-### Usage
-TODO
+
+- test_calculate_cost_BeachResort_with_surfing()
+
+  - Description: This test verifies that the cost calculation for a BeachResort vacation includes the additional cost of surfing when the includes_surfing argument is set to True. It checks whether the total cost is correctly calculated by multiplying the daily rate by the duration and adding the surfing cost.
+  - Relevance: This test ensures that additional activities, like surfing, are factored into the cost calculation for beach vacations. It verifies the correctness of how extra features affect the overall vacation cost.
+
+- test_calculate_cost_BeachResort_missing_argument()
+
+  - Description: This test is designed to check how the system handles the case where a required argument (includes_surfing) is missing when creating a BeachResort vacation. It expects the test to raise a ValueError since the input is incomplete.
+  - Relevance: Ensures robust error handling by verifying that the system throws an appropriate error when required arguments are missing, preventing unexpected behavior or crashes.
+
+- test_calculate_cost_AdventureTrip_hard()
+
+  - Description: This test checks the cost calculation for an AdventureTrip vacation when the difficulty_level is set to "hard". It verifies that the cost is doubled for harder trips, as specified by the business rules.
+  - Relevance: This test ensures that difficulty levels are correctly applied to the cost calculation, validating the system’s ability to handle pricing adjustments based on vacation difficulty.
+
+- test_calculate_cost_LuxuryCruise_has_private_suite()
+
+  - Description: This test verifies that the cost calculation for a LuxuryCruise vacation correctly includes the surcharge for having a private suite. The test checks whether the total cost is increased by 1.5x when has_private_suite is set to True.
+   -Relevance: It ensures that luxury options, such as private suites, are properly factored into the cost calculation, providing correctness in pricing for premium offerings.
+
+- test_calculate_summary_all_vacations()
+
+  - Description: This test checks the functionality of the VacationBookingSummary class by creating a summary of multiple vacation types (BeachResort, AdventureTrip, and LuxuryCruise). It verifies that the total cost of all vacations is calculated correctly.
+  - Relevance: Ensures that the system can handle multiple vacation packages at once and provides a correct aggregate cost. This is important for summarizing and calculating the total cost of vacations across various types and to prove the functionality of the function summary.
+
+### Utility Functions
+
+**pretty_printer()**
+
+  - This function formats and prints the results of each test, including details such as test name, status (SUCCESS, FAIL, ERROR), actual vs expected output, and execution time.
+
+**Assert_equals()**
+
+  - assert_equals() compares the actual output of a test with the expected output. If they match, the test is marked as a success; otherwise, it's marked as a failure or error. It also tracks the time taken to run the test. Error is marked when an exception occurs during the test.
+
+**clear_mydict()**
+
+  - This utility function clears the vacation summaries (mydict) before each test to ensure that previous tests don’t affect the current test.
+
+**run_tests()**
+
+  - This function identifies and runs all test functions in the script. It can also run a subset of tests based on a pattern, making it flexible for targeted testing.
+  - It was built so that all tests could run without calling them one by one, it will run by main when compiled.
+  - It requires a pattern to find the tests, but if no pattern is provided it will take that value as none and will execute all tests.
+  - It will count how many tests were run, if no tests are run it asserts an error because it would mean that the pattern was not found and no tests were executed.
+  - The library re is imported to be able to run tests even if the pattern is not 100% exact. For example: "Bea" would run all the tests with "beach". 
+
+**parse_arguments()**
+
+  - This function parses command-line arguments to determine if a specific test pattern is provided by the user. If a pattern is provided, the value is saved and will be then sent to the function run_tests()
+  - When python -h is called, a description of how to use the command line is shown to help the users who are not familiar with the usage.
+  - The pattern is then stripped and turned into a string so it can be easily worked with.
+  - Example of how to use the command line: python test_script.py --select Beach
