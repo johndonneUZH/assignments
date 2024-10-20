@@ -1,48 +1,42 @@
-from vacation_booking import make, call, BeachResort, LuxuryCruise, AdventureTrip
-import inspect
+from vacation_booking import call, make, find_method, VacationPackage, BeachResort, AdventureTrip, LuxuryCruise, VacationBookingSummary
 from time import perf_counter
-import argparse
-import re
+import inspect, argparse, re
 
 # --------------------------------------------------------------------
 # FORMATTER
 # --------------------------------------------------------------------
-def printer(test_name, result, status, execution_time, actual=None, expected=None):
+def pretty_printer(test_name, result, status, execution_time, actual=None, expected=None):
     print(f"==============================")
     print(f"TEST RESULT: {status}")
     print(f"TEST NAME: {test_name}")
-    print(f"Execution time: {execution_time:.6f} seconds")
-    
+    print(f"Execution time: {execution_time:.6f} seconds")   
     if status == "SUCCESS":
         print(f"Actual: {actual}")
         print(f"Expected: {expected}")
 
     if status == "ERROR":
         print(f"An error occurred: {result}")
-    
+
     if status == "FAIL":
-        print(f"Expected: {expected}, but got: {actual}")
-    
+        print(f"Expected: {expected}, but got: {actual}")    
     print(f"==============================\n")
 
-def assert_equals(actual, expected, test_name, execution_time):
-    if actual == expected:
-        printer(test_name, actual, "SUCCESS", execution_time, actual, expected)
-    elif expected is None:
-        # Handle error cases when no expected value is provided
-        printer(test_name, actual, "ERROR", execution_time)
+def assert_equals(actual, expected, test_name, execution_time, error=False):
+    if error:
+        pretty_printer(test_name, actual, "ERROR", execution_time, actual, expected)
+    elif actual == expected:
+        pretty_printer(test_name, actual, "SUCCESS", execution_time, actual, expected)
     else:
-        # Failure case when actual does not match expected
-        printer(test_name, actual, "FAIL", execution_time, actual, expected)
+        pretty_printer(test_name, actual, "FAIL", execution_time, actual, expected)
 
 # --------------------------------------------------------------------
-# BEACH SUCCESS
+# SUCCESSES
 # --------------------------------------------------------------------
-def test_calculate_cost_BeachResort_with_surfing_success():
+def test_calculate_cost_BeachResort_with_surfing():
     test_name = inspect.currentframe().f_code.co_name
     try:
+        clear_mydict()
         vacation = make(BeachResort, "Maldives", 100, 7, True)
-
         start_time = perf_counter()
 
         actual_cost = call(vacation, "calculate_cost")
@@ -52,34 +46,13 @@ def test_calculate_cost_BeachResort_with_surfing_success():
         execution_time = end_time - start_time
         assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(None, None, test_name, 0)  # In case of unexpected errors
+        assert_equals(e, None, test_name, 0, error=True)  # In case of unexpected errors
 
-# --------------------------------------------------------------------
-# BEACH FAILURE
-# --------------------------------------------------------------------
-def test_calculate_cost_BeachResort_with_surfing_failure():
+def test_calculate_cost_BeachResort_missing_argument():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = make(BeachResort, "Maldives", 100, 7, False)
-        start_time = perf_counter()
-
-
-        actual_cost = call(vacation, "calculate_cost")
-        expected_cost = 800  # Wrong expectation deliberately
-
-        end_time = perf_counter()
-        execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, test_name, execution_time)
-    except Exception as e:
-        assert_equals(e, None, test_name, 0)
-
-# --------------------------------------------------------------------
-# BEACH ERROR
-# --------------------------------------------------------------------
-def test_calculate_cost_BeachResort_with_surfing_error():
-    test_name = inspect.currentframe().f_code.co_name
-    try:
-        vacation = make(BeachResort, "Maldives", 100, 7,) # Deliberately missing the surfing argument
+        clear_mydict()
+        vacation = make(BeachResort, "Maldives", 100, 7) # Deliberately missing the surfing argument
         start_time = perf_counter()
 
 
@@ -89,15 +62,19 @@ def test_calculate_cost_BeachResort_with_surfing_error():
         end_time = perf_counter()
         execution_time = end_time - start_time
         assert_equals(actual_cost, expected_cost, test_name, execution_time)
-    except Exception as e:
-        assert_equals(e, None, test_name, 0)
 
-# --------------------------------------------------------------------
-# ADVENTURE SUCCESS
-# --------------------------------------------------------------------
-def test_calculate_cost_AdventureTrip_hard_success():
+    # We expect a ValueError to be raised, this means that the function is working as expected
+    except ValueError as e:
+        assert_equals(e, e, test_name, 0)
+
+    # In case of unexpected errors, we want to flag the test as ERROR
+    except Exception as e:
+        assert_equals(None, None, test_name, 0, error=True)
+
+def test_calculate_cost_AdventureTrip_hard():
     test_name = inspect.currentframe().f_code.co_name
     try:
+        clear_mydict()
         vacation = make(AdventureTrip, "Maldives", 100, 7, "hard")
         start_time = perf_counter()
 
@@ -108,53 +85,12 @@ def test_calculate_cost_AdventureTrip_hard_success():
         execution_time = end_time - start_time
         assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(None, None, test_name, 0)  # In case of unexpected errors
+        assert_equals(e, None, test_name, 0, error=True)  # In case of unexpected errors
 
-# --------------------------------------------------------------------
-# ADVENTURE FAILURE
-# --------------------------------------------------------------------
-def test_calculate_cost_AdventureTrip_hard_failure():
+def test_calculate_cost_LuxuryCruise_has_private_suite():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = make(AdventureTrip, "Maldives", 100, 7, "easy")
-        start_time = perf_counter()
-
-
-        actual_cost = call(vacation, "calculate_cost")
-        expected_cost = 1400  # Wrong expectation deliberately
-
-        end_time = perf_counter()
-        execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, test_name, execution_time)
-    except Exception as e:
-        assert_equals(e, None, test_name, 0)
-
-# --------------------------------------------------------------------
-# ADVENTURE ERROR
-# --------------------------------------------------------------------
-def test_calculate_cost_AdventureTrip_hard_error():
-    test_name = inspect.currentframe().f_code.co_name
-    try:
-        vacation = make(AdventureTrip, "Maldives", 100, 7 ) # Deliberately missing the surfing argument
-        start_time = perf_counter()
-
-
-        actual_cost = call(vacation, "calculate_cost")
-        expected_cost = 700 
-
-        end_time = perf_counter()
-        execution_time = end_time - start_time
-        assert_equals(actual_cost, expected_cost, test_name, execution_time)
-    except Exception as e:
-        assert_equals(e, None, test_name, 0)
-
-
-# --------------------------------------------------------------------
-# LUXURY SUCCESS
-# --------------------------------------------------------------------
-def test_calculate_cost_LuxuryCruise_has_private_suite_success():
-    test_name = inspect.currentframe().f_code.co_name
-    try:
+        clear_mydict()
         vacation = make(LuxuryCruise, "Maldives", 100, 7, True)
         start_time = perf_counter()
 
@@ -165,16 +101,43 @@ def test_calculate_cost_LuxuryCruise_has_private_suite_success():
         execution_time = end_time - start_time
         assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(None, None, test_name, 0)  # In case of unexpected errors
+        assert_equals(e, None, test_name, 0, error=True)  # In case of unexpected errors
+
+def test_calculate_summary_all_vacations():
+    test_name = inspect.currentframe().f_code.co_name
+    try:
+        start_time = perf_counter()
+        clear_mydict()
+
+        vacation1 = make(BeachResort, "Maldives", 100, 7, True)
+        vacation2 = make(AdventureTrip, "Greece", 120, 4, "hard")
+        vacation3 = make(LuxuryCruise, "Caribbean", 150, 10, False)
+        
+        # Assuming VacationBookingSummary takes a list of vacations
+        vacations_summary = make(VacationBookingSummary, "summary")
+
+        actual_cost = call(vacations_summary, 'calculate_cost')        
+        expected_cost = (100*7 + 100) + ((120*2)*4) + (150*10)
+
+        end_time = perf_counter()
+        execution_time = end_time - start_time
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
+    except Exception as e:
+        assert_equals(e, None, test_name, 0, error=True)  # In case of unexpected errors
 
 # --------------------------------------------------------------------
-# LUXURY FAILURE
+# FAILURES
 # --------------------------------------------------------------------
+
+# # We are failing this test ON PURPOSE to demonstrate the test failure output
+
 def test_calculate_cost_LuxuryCruise_has_private_suite_failure():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = make(LuxuryCruise, "Maldives", 100, 7, False)
         start_time = perf_counter()
+        clear_mydict()
+        vacation = make(LuxuryCruise, "Maldives", 100, 7, False)
+        
 
 
         actual_cost = call(vacation, "calculate_cost")
@@ -186,25 +149,128 @@ def test_calculate_cost_LuxuryCruise_has_private_suite_failure():
     except Exception as e:
         assert_equals(e, None, test_name, 0)
 
-# --------------------------------------------------------------------
-# LUXURY ERROR
-# --------------------------------------------------------------------
-def test_calculate_cost_LuxuryCruise_has_private_suite_error():
+
+def test_calculate_cost_AdventureTrip_easy_failure():
     test_name = inspect.currentframe().f_code.co_name
     try:
-        vacation = make(LuxuryCruise, "Maldives", 100, 7) # Deliberately missing the surfing argument
         start_time = perf_counter()
+        clear_mydict()
+        vacation = make(AdventureTrip, "Maldives", 100, 7, "easy")
+ 
 
 
         actual_cost = call(vacation, "calculate_cost")
-        expected_cost = 700 
+        expected_cost = 1400  # Counted times 2 even though it is not hard
 
         end_time = perf_counter()
         execution_time = end_time - start_time
         assert_equals(actual_cost, expected_cost, test_name, execution_time)
     except Exception as e:
-        assert_equals(e, None, test_name, 0)
+        assert_equals(e, None, test_name, 0, error = True)
 
+def test_calculate_cost_BeachResort_with_no_surfing_failure():
+    test_name = inspect.currentframe().f_code.co_name
+    try:
+        start_time = perf_counter()
+        clear_mydict()
+        vacation = make(BeachResort, "Spain", 50, 6, False)
+        
+
+
+        actual_cost = call(vacation, "calculate_cost")
+        expected_cost = 400  # Counted as if there would be surfing
+
+        end_time = perf_counter()
+        execution_time = end_time - start_time
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
+    except Exception as e:
+        assert_equals(e, None, test_name, 0, error=True)
+
+def test_calculate_summary_all_vacations_failure():
+    test_name = inspect.currentframe().f_code.co_name
+    try:
+        start_time = perf_counter()
+        clear_mydict()
+
+        vacation1 = make(BeachResort, "Maldives", 100, 7, True)
+        vacation2 = make(AdventureTrip, "Greece", 120, 4, "hard")
+        vacation3 = make(LuxuryCruise, "Caribbean", 150, 10, True)   
+        vacations_summary = make(VacationBookingSummary, "summary", 'Tibet')
+        
+        actual_cost = call(vacations_summary, 'calculate_cost')
+        print(actual_cost)
+        expected_cost = (100*7 + 100) #just took the first vacation
+
+        end_time = perf_counter()
+        execution_time = end_time - start_time
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
+    except Exception as e:
+        assert_equals(None, None, test_name, 0, error = True)
+
+
+
+# # --------------------------------------------------------------------
+# # ERRORS
+# # --------------------------------------------------------------------
+def test_make_AdventureTrip_medium_error():
+    test_name = inspect.currentframe().f_code.co_name
+    try:
+        clear_mydict()
+        vacation = make(AdventureTrip,"Alps", 200, 7, "medium") # Invalid argument
+        start_time = perf_counter()
+
+
+        actual_description = call(vacation, "describe_package")
+        expected_description = None 
+
+        end_time = perf_counter()
+        execution_time = end_time - start_time
+        assert_equals(actual_description, expected_description, test_name, execution_time)
+
+    except Exception as e:
+        assert_equals(e, None, test_name, 0, error=True)
+
+
+
+
+def test_calculate_cost_with_invalid_days():
+    test_name = inspect.currentframe().f_code.co_name
+    try:
+        clear_mydict()
+        vacation = make(AdventureTrip, "Bern", 150, -5, "easy") #invalid number of vacation days
+        start_time = perf_counter()
+
+        actual_cost = call(vacation, "calculate_cost") 
+        expected_cost = None #no output should be returned
+
+        end_time = perf_counter()
+        execution_time = end_time - start_time
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
+ 
+    except Exception as e:
+        assert_equals(e, None, test_name, 0, error=True)  # In case of unexpected errors
+
+def test_calculate_summary_without_vacations_made():
+    test_name = inspect.currentframe().f_code.co_name
+    try:
+        start_time = perf_counter()
+        clear_mydict()
+
+        vacation1 = make(BeachResort, "Maldives", 100, 7, True)
+        vacation2 = make(AdventureTrip, "Greece", 120, 4, "hard")
+        vacation3 = make(LuxuryCruise, "Caribbean", 150, 10, True)   
+        vacation4 = make(InventedVacation, "Nowhere", 1000, 3, False)
+        vacations_summary = make(VacationBookingSummary, "summary")
+
+        actual_cost = call(vacations_summary, 'calculate_cost')        
+        expected_cost = None
+
+        end_time = perf_counter()
+        execution_time = end_time - start_time
+        assert_equals(actual_cost, expected_cost, test_name, execution_time)
+
+    except Exception as e:
+        assert_equals(e, None, test_name, 0, error=True)  # In case of unexpected errors
 
 # --------------------------------------------------------------------
 # UTILITY FUNCTIONS
@@ -239,12 +305,12 @@ def run_tests(pattern=None):
         print(f"Selected tests executed ({actual_tests}/{total_tests})." if pattern else f"All tests executed. ({actual_tests}/{total_tests}).")      
 
 def parse_arguments():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="Run a selection of vacation package tests.")
     parser.add_argument(
         '--select',
         type=str,
-        # Prints a message to show with inputs are valid when -h is used.
-        help='Pattern to SELECT specific tests to run (e.g., "Beach", "Cruise")'
+        # Prints a message to show with inputs are valid.
+        help='Pattern to select specific tests to run (e.g., "Beach", "Cruise")'
     )
     args = parser.parse_args()
     
@@ -253,7 +319,10 @@ def parse_arguments():
     else:
         pattern = None
     return pattern
-            
+
+def clear_mydict():
+    mydict = find_method(VacationPackage, 'mydict')
+    mydict.clear() 
 # --------------------------------------------------------------------
 # --------------------------------------------------------------------
 
