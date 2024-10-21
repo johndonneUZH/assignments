@@ -170,30 +170,31 @@ def do_VacationBookingSummary(name: str, searchTerm=None) -> dict:
         "_searchTerm": searchTerm
     }
 
-def calculate_total_cost(vacation: dict):
+def calculate_total_cost(vacation: dict) -> float:
     if not isinstance(vacation, dict):
         raise ValueError("Invalid vacation package")
 
     try:
         total_cost = 0
-        vacation_summaries = find_method(VacationPackage, 'mydict')
-        searchTerm = vacation['_searchTerm']
-        object_name = vacation['_objectName']
+        vacation_summaries = find_method(VacationPackage, 'mydict')  # Assuming this returns a dict of lists
+        searchTerm = vacation.get('_searchTerm', None)
+        object_name = vacation.get('_objectName', None)
 
         # Calculate the total cost of all vacations if no search term is provided
         if not searchTerm:
             for vacation_type, vacations in vacation_summaries.items():
-                for vacation in vacations:
-                    total_cost += call(vacation, 'calculate_cost')
+                for vacation_entry in vacations:
+                    total_cost += call(vacation_entry, 'calculate_cost')  # Assuming each entry has 'calculate_cost'
         
         # Find the vacation type based on the search term
         else:
-            vacation_type = findSearchTerm(vacation)        
+            vacation_type = findSearchTerm(vacation)
             if not vacation_type:
                 return 0
             
-            for vacation in vacation_summaries[vacation_type]:
-                total_cost += call(vacation, 'calculate_cost')
+            for vacation_entry in vacation_summaries.get(vacation_type, []):
+                total_cost += call(vacation_entry, 'calculate_cost')  # Same assumption
+            
         return float(f"{total_cost:.2f}")
     
     except Exception as e:
@@ -205,8 +206,8 @@ def extract_total_vacation_summary(vacation: dict) -> str:
 
     try:
         vacation_summaries = find_method(VacationPackage, 'mydict')
-        searchTerm = vacation['_searchTerm']
-        object_name = vacation['_objectName']
+        searchTerm = vacation.get('_searchTerm', None)
+        object_name = vacation.get('_objectName', None)
 
         # Pretty print the vacation summaries
         separator_title = '=' * 20
@@ -222,8 +223,8 @@ def extract_total_vacation_summary(vacation: dict) -> str:
         if not searchTerm:
             for vacation_type, vacations in vacation_summaries.items():
                 result.append(f"{separator_normal} {vacation_type.upper()}S {separator_normal}")
-                for vacation in vacations:
-                    result.append(call(vacation, 'describe_package'))
+                for vacation_entry in vacations:
+                    result.append(call(vacation_entry, 'describe_package'))
                 result.append('\n')
 
         else:
@@ -234,11 +235,15 @@ def extract_total_vacation_summary(vacation: dict) -> str:
                 return not_found
 
             result.append(f"{separator_normal} {vacation_type.upper()}S {separator_normal}")
-            for vacation in vacation_summaries[vacation_type]:
-                result.append(call(vacation, 'describe_package'))
+            for vacation_entry in vacation_summaries[vacation_type]:
+                result.append(call(vacation_entry, 'describe_package'))
             result.append('\n')    
 
-        result.append(f"{object_name.upper()} | Total cost: ${call(vacation, 'calculate_cost'):.2f}")
+        # Use the call function to calculate the total cost based on the current vacation summary object
+        total_cost = call(vacation, 'calculate_cost')
+
+        # Append the total cost to the result
+        result.append(f"{object_name.upper()} | Total cost: ${total_cost:.2f}")
 
         return '\n'.join(result)
     
