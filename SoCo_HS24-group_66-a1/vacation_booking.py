@@ -350,7 +350,8 @@ def main():
     vacation3 = make(LuxuryCruise, "Caribbean", 150, 10, False)
         
     vacation_summaries = make(VacationBookingSummary, "Total Vacations")
-    print(call(vacation_summaries, "calculate_cost"))
+    print('Total cost for all vacations is: ${}'.format(call(vacation_summaries, "calculate_cost")))
+    print(call(vacation_summaries, "describe_package"))
 
 if __name__ == "__main__":
     main()
