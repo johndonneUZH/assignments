@@ -230,7 +230,7 @@ Exception Handling: It catches all exceptions and wraps them in a RuntimeError f
 
 ## General Remarks
 ### Project Structure
-- While setting up the repository on GitLab, we discovered the option to mirror a repository from GitHub. Since we were already familiar with GitHub, we chose to leverage that experience and instead focus on building a basic CI/CD pipeline. This approach allowed us to simulate a typical coding workflow in a professional environment. As a result, both our GitHub and GitLab usernames are visible in this repository.
+- While setting up the repository on GitLab, we discovered the option to mirror a repository from GitHub. Since we were already familiar with GitHub, we chose to leverage that experience and focus on building a basic CI/CD pipeline. This approach allowed us to simulate a typical coding workflow in a professional environment. As a result, both our GitHub and GitLab usernames are visible in this repository.
 - Our workflow follows these steps:
 1. Pull the latest changes from the main branch locally.
 2. Create a new branch to work on a feature or task.
