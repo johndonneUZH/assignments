@@ -99,7 +99,7 @@ Exception Handling: It catches all exceptions and wraps them in a RuntimeError f
      
         Performance impact: The fact that it traverses the class hierarchy recursively, introduces performance costs.
   
-**Make()**
+**make()**
 - This function serves as the creator, that dynamically creates instances of different vacation types (eg. BeachResort, LuxuryCruise). It uses the provided vacation type information to construct the object with the given parameters and adds it to the vacation summaries.
   Defensive Programming:  It validates both the class of the vacation package and the input parameters, ensuring that invalid input or incorrect types are caught.
   Exception Handling: The function checks for invalid argument counts and incorrect vacation types, raising informative ValueError exceptions.
@@ -117,7 +117,6 @@ Exception Handling: It catches all exceptions and wraps them in a RuntimeError f
 ### Description
 
 - test_calculate_cost_BeachResort_with_surfing()
-
   - Description: This test verifies that the cost calculation for a BeachResort vacation includes the additional cost of surfing when the includes_surfing argument is set to True. It checks whether the total cost is correctly calculated by multiplying the daily rate by the duration and adding the surfing cost.
   - Relevance: This test ensures that additional activities, like surfing, are factored into the cost calculation for beach vacations. It verifies the correctness of how extra features affect the overall vacation cost.
 
@@ -129,13 +128,11 @@ Exception Handling: It catches all exceptions and wraps them in a RuntimeError f
 
 
 - test_calculate_cost_BeachResort_missing_argument()
-
   - Description: This test is designed to check how the system handles the case where a required argument (includes_surfing) is missing when creating a BeachResort vacation. It expects the test to raise a ValueError since the input is incomplete.
   - Relevance: Ensures robust error handling by verifying that the system throws an appropriate error when required arguments are missing, preventing unexpected behavior or crashes.
 
 
 - test_calculate_cost_AdventureTrip_hard()
-
   - Description: This test checks the cost calculation for an AdventureTrip vacation when the difficulty_level is set to "hard". It verifies that the cost is doubled for harder trips, as specified by the business rules.
   - Relevance: This test ensures that difficulty levels are correctly applied to the cost calculation, validating the system’s ability to handle pricing adjustments based on vacation difficulty.
 
@@ -151,67 +148,55 @@ Exception Handling: It catches all exceptions and wraps them in a RuntimeError f
 
 
 - test_calculate_cost_LuxuryCruise_has_private_suite()
-
   - Description: This test verifies that the cost calculation for a LuxuryCruise vacation correctly includes the surcharge for having a private suite. The test checks whether the total cost is increased by 1.5x when has_private_suite is set to True.
   - Relevance: It ensures that luxury options, such as private suites, are properly factored into the cost calculation, providing correctness in pricing for premium offerings.
 
 
-- test_calculate_cost_LuxuryCruise_no_private_suite()
-  
+- test_calculate_cost_LuxuryCruise_no_private_suite() 
   - Description: This test ensures that when has_private_suite is set to False the calculation for a LuxuryCruise vacation is adjusted correspondingly. The cost should only be computed with the duration of the vacation and rate per day.
   - Relevance: It checks that the cost is computed correctly, even when the has_private_suite argument is set to False, ensuring that without a private suite, the costs are not increased.
 
 
 - test_LuxuryCruise_missing_argument()
-
   - Description: This test demonstrates how the cost computation for a LuxuryCruise behaves when the argument has_private_suite is forgotten. The output should give us an error mesage.
   - Relevance: Together with the two test before, it is ensured that the cost for a LuxuryCruise is always computed correctly, as the programm outputs a ValueError if the argument is missing.
 
 
-- test_calculate_VacationBookingSummary()
-
+- test_calculate_VacationBookingSummary
   - Description: This test checks the functionality of the VacationBookingSummary class by creating a summary of multiple vacation types (BeachResort, AdventureTrip, and LuxuryCruise). It verifies that the total cost of all vacations is calculated correctly.
   - Relevance: Ensures that the system can handle multiple vacation packages at once and provides a correct aggregate cost. This is important for summarizing and calculating the total cost of vacations across various types and to prove the functionality of the function summary.
 
-
 - test_calculate_cost_LuxuryCruise_has_private_suite_failure()
-
   - Description: It checks if the the tests above do not run wich a "SUCCESS" output with any given integer. The solution has to be correct. This test is designed to fail.
   - Relevance: This test is an addition to the the tests of the LuxuryCruise above given, as it demonstrates that not any integer given is taken as correct, it does indeed have to match the calculations. This insures that not any costs for LuxuryCruise are computed correctly.
 
 
 - test_calculate_cost_AdventureTrip_easy_failure()
-
   - Description: This checks if the output given from running the cost function on an AdventureTrip vacation does not simply output any integer. This test should fail.
   - Relevance: Similarly to the test above, it ensures that the tests that were executed on cost computation of an AdventureTrip vacation do not compute correct for any given integer. Furthermore, it ensures that cost are not falsely doubled since the difficulty_level attribute is set to "easy".
 
 
 - test_calculate_cost_BeachResort_with_no_surfing_failure()
-  
   - Description: This test demonstrates that when the cost is calculated for a BeachResort vacation, it gives us a correct integer and not just any. The ouput here should be "FAIL".
   - Relevance: As the two test did before this one, it ensures that the tests that were perfomed on the cost calculation of a BeachResort vacation do not simply accept any integer as true. In addition to this, it checks that the cost was not falsely computed for vacation including surfing.
 
 
 - test_calculate_VacationBookingSummarys_failure()
-
   - Description: Here we ensure that the test given do not just compute just the fist vacation given but all of them. Furthermore we prove that the tests above did not just access the test as successfull for any integer given.
   - Relevance: This test makes sure that the test executed above is not just passed for any integer. It demonstrates us that the calculation for the cost of all vacations together is runs smoothly.
 
 
 - test_make_AdventureTrip_medium_error()
-
   - Description: Here we ensure that an error mesage is ouputed if an arbitrary difficulty_level is given.
   - Relevance: This test is very important, as it demonstrates that an AdventureTrip is not made and therefore not described if an argument is not given in the defined way.
 
 
 - test_calculate_cost_with_invalid_days()
-
   - Description: In this test we demonstrate that the cost of a vacation is not calculated if the number of vacation days is negative. This test should have the output in form of "ERROR".
   - Relevance: This shows, that the the programm does not execute for inputs that do not make sense, here in the example of a negative vacation duration.
 
 
 - test_calculate_VacationBookingSummary_not_existent_vacationtype()
-
   - Description: This test ensures that no cost is calculated for the summary of vacations, whilst one of them is faulty. This is due to the fact that a vacation is not made with an inexistent vacation type. This test should have an error as output.
   - Relevance: This shows us that functions like calculate_cost() and make() do not run if the vacation_class attribut is not correctly defined.
 
@@ -219,19 +204,16 @@ Exception Handling: It catches all exceptions and wraps them in a RuntimeError f
 ### Utility Functions
 
 **pretty_printer()**
-
   - This function formats and prints the results of each test, including details such as test name, status (SUCCESS, FAIL, ERROR), actual vs expected output, and execution time.
 
-**Assert_equals()**
-
+**assert_equals()**
   - assert_equals() compares the actual output of a test with the expected output. If they match, the test is marked as a success; otherwise, it's marked as a failure or error. It also tracks the time taken to run the test. Error is marked when an exception occurs during the test.
 
 **clear_mydict()**
-
-  - This utility function clears the vacation summaries (mydict) before each test to ensure that previous tests don’t affect the current test.
+  - Given that all the children classes share the same parent dictionary, when we create vacations the test they are getting added to 'mydict'
+  - This utility function clears the vacation summaries (mydict) before each test to ensure that previous tests don’t affect the current test, especially for tests regarding VacationBookingSummary
 
 **run_tests()**
-
   - This function identifies and runs all test functions in the script. It can also run a subset of tests based on a pattern, making it flexible for targeted testing.
   - It was built so that all tests could run without calling them one by one, it will run by main when compiled.
   - It requires a pattern to find the tests, but if no pattern is provided it will take that value as none and will execute all tests.
@@ -239,8 +221,23 @@ Exception Handling: It catches all exceptions and wraps them in a RuntimeError f
   - The library re is imported to be able to run tests even if the pattern is not 100% exact. For example: "Bea" would run all the tests with "beach". 
 
 **parse_arguments()**
-
   - This function parses command-line arguments to determine if a specific test pattern is provided by the user. If a pattern is provided, the value is saved and will be then sent to the function run_tests()
   - When python -h is called, a description of how to use the command line is shown to help the users who are not familiar with the usage.
   - The pattern is then stripped and turned into a string so it can be easily worked with.
   - Example of how to use the command line: python test_script.py --select Beach
+
+---
+
+## General Remarks
+### Project Structure
+- While setting up the repository on GitLab, we discovered the option to mirror a repository from GitHub. Since we were already familiar with GitHub, we chose to leverage that experience and instead focus on building a basic CI/CD pipeline. This approach allowed us to simulate a typical coding workflow in a professional environment. As a result, both our GitHub and GitLab usernames are visible in this repository.
+- Our workflow follows these steps:
+1. Pull the latest changes from the main branch locally.
+2. Create a new branch to work on a feature or task.
+3. Commit the changes to the feature branch.
+4. Submit a merge request to integrate the feature into the main branch.
+5. Peer review: Another team member reviews the merge request, providing feedback if necessary (with the option to approve or reject).
+6. Merge and deploy: Once approved, the feature is merged and successfully integrated.
+
+## AI Integration
+- We leveraged GitHub Copilot's autocomplete feature to generate detailed code comments. This allowed us to maintain clear, comprehensive documentation within the codebase while streamlining our development process.
