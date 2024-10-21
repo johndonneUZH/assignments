@@ -130,7 +130,7 @@ def test_AdventureTrip_missing_argument():
     test_name = inspect.currentframe().f_code.co_name
     try:
         clear_mydict()
-        vacation = make(AdventureTrip, "Maldives", 100, 7) # Deliberately missing the surfing argument
+        vacation = make(AdventureTrip, "Maldives", 100, 7) # Deliberately missing the difficulty argument
         start_time = perf_counter()
 
         actual_cost = call(vacation, "calculate_cost")
@@ -340,7 +340,7 @@ def test_calculate_cost_with_invalid_days():
     except Exception as e:
         assert_equals(e, None, test_name, 0, error=True)  # In case of unexpected errors
 
-def test_calculate_VacationBookingSummary_without_vacations_made():
+def test_calculate_VacationBookingSummary_not_existent_vacationtype():
     test_name = inspect.currentframe().f_code.co_name
     try:
         start_time = perf_counter()
