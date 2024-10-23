@@ -1,0 +1,1 @@
+https://gitlab.uzh.ch/soco_hs24-group_66/assignments
