@@ -181,9 +181,6 @@ def do(expr, metadata):
     if isinstance(expr, int):
         return expr
 
-    if isinstance(expr, str):
-        return evaluate_expression(expr, metadata)
-
     assert isinstance(expr, list), f"Expected expr to be a list, got {type(expr)}: {expr}"
 
     if len(expr) == 1 and isinstance(expr[0], str):
