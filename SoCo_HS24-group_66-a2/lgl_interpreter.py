@@ -38,11 +38,20 @@ def convert_value(val):
         return int(val) # First, try to convert the value to an integer
     except ValueError:
         try:
-            result = ast.literal_eval(val)
-            if isinstance(result, list):
+            inner = val.strip()[1:-1].strip()
+            if inner.startswith("'") and inner.endswith("'"):
+                inner_str = inner[1:-1]
+                result = [inner_str]
                 return result #Tries to see if it is a list
             else:
-                raise ValueError(f"'{val}' is neither a number nor a list.")
+                try:
+                    result = ast.literal_eval(val)
+                    if isinstance(result, list):
+                        return result #Tries to see if it is a list
+                    else:
+                       raise ValueError(f"'{val}' is neither a number nor a list.")
+                except:
+                    pass
         except (ValueError, SyntaxError):
             raise ValueError(f"'{val}' is neither a number nor a list.")
             
@@ -69,7 +78,11 @@ def evaluate_expression(expr, metadata):
     match = re.search(r'([+\-*/]|and|or|xor)', expr, re.IGNORECASE) # gets the expression
     assert match, f"Not a valid expression: {expr}" # if there is not valid expression then error
     operation = match.group(0) # gets the exact expression that he got
-    args = re.split(r'\s*(?:[+\-*/]|xor|and|or)\s*', expr, flags=re.IGNORECASE) # ignores cases for and and or and xor
+    index = expr.find(operation)
+    left = expr[:index].strip()
+    right = expr[index + 1:].strip()
+    args = [left, right]
+    # use search
     return solve_expression(args, operation, metadata)
 
 
@@ -181,12 +194,16 @@ def do(expr, metadata):
     if isinstance(expr, int):
         return expr
 
+    if isinstance(expr, str):
+        return evaluate_expression(expr, metadata)
+
     assert isinstance(expr, list), f"Expected expr to be a list, got {type(expr)}: {expr}"
 
     if len(expr) == 1 and isinstance(expr[0], str):
         return evaluate_expression(expr[0], metadata)
     
     operation = expr[0]
+    print(operation)
     if operation in OPS:
         return OPS[operation](expr[1:], metadata)
     else:
@@ -227,7 +244,7 @@ def main():
     result = do(program, metadata)
     
     print(result)
-
+    print(metadata)
 
 
 
