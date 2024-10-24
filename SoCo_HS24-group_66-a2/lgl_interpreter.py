@@ -1,20 +1,25 @@
 import sys
-import re
+
 
 def program_reader():
     assert len(sys.argv) == 2, "usage: python interpreter.py code.tll"
     with open(sys.argv[1], 'r') as file:
-        program = file.readlines
+        program = file.readlines()
     return program
 
 def evaluate_expression(expr, env):
-    pass
+    try: 
+        return eval(expr, {}, env)
+    except:
+        raise ValueError
+        
 
 def do_addieren(env, args):
     assert len(args) == 2
     left = do(env, args[0])
     right = do(env, args[1])
     return left + right
+
 def do_subtrahieren(env, args):
     assert len(args) == 2
     left = do(env, args[0])
@@ -78,6 +83,8 @@ def do(env, expr):
         operation = expr[0]
         assert operation in OPERATIONS, f"Operation {operation} not implemented"
         return OPERATIONS[operation](env, expr[1:])
+    else:
+        return evaluate_expression(expr, env)
     
     
 
