@@ -1,0 +1,22 @@
+[
+    "sequence",
+    ["set", "addieren", 
+        ["function", ["x", "y"], 
+            [
+                "sequence",
+                ["set", "outer", ["add", 2, 3]],
+                ["set", "sub",
+                    ["function", "z", 
+                        [
+                            "set", "inner", ["absolute", -4]
+                        ]
+                    ]
+                ],
+                ["call", "sub", 32],
+                ["add", ["get", "outer"], 3]
+            ]
+        ]
+    ],
+
+    ["call", "addieren", 3, 2]
+]
