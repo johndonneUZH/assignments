@@ -23,3 +23,7 @@ Scope:
 ### Scope:
 - Represents local scopes, each with its own locals dictionary.
 - Supports nested scoping by allowing each Scope to have a parent scope, enabling the retrieval of variables from outer scopes if not found locally.
+
+
+## Utility Functions
+### **do_set()**
