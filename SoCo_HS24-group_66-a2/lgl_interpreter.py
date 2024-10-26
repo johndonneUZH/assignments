@@ -1,4 +1,4 @@
-import sys, json, pprint
+import sys, json, re, ast, operator, pprint
 
 class GlobalScope:
     def __init__(self):
@@ -44,6 +44,78 @@ def createFunctionObject(params, body, parent=None):
         'scope': Scope(parent),
         'callable': True
     }
+
+def convert_value(val):
+    try:
+        return int(val) # First, try to convert the value to an integer
+    except ValueError:
+        try:
+            inner = val.strip()[1:-1].strip()
+            if inner.startswith("'") and inner.endswith("'"):
+                inner_str = inner[1:-1]
+                result = [inner_str]
+                return result #Tries to see if it is a list inside a string and turns into a list so can be further analyzed
+            else: # Checks if the list is already in list format.
+                try:
+                    result = ast.literal_eval(val)
+                    if isinstance(result, list):
+                        return result #Tries to see if it is a list
+                    else:
+                        raise ValueError(f"'{val}' is neither a number nor a list.")
+                except:
+                    raise ValueError(f"'{val}' is neither a number nor a list.")
+        except (ValueError, SyntaxError):
+            raise ValueError(f"'{val}' is neither a number nor a list.")
+
+def solve_expression(args, operation, metadata):
+    assert len(args) == 2, f"Expected two arguments, got {len(args)}"
+    left = do(convert_value(args[0]), metadata)     # Convert the arguments to values (numbers or nested expressions)
+    right = do(convert_value(args[1]), metadata)
+    #We do it this way to avoid using eval() and avoiding else if statements
+    OPERATORS = {
+        '+': operator.add,
+        '-': operator.sub,
+        '*': operator.mul,
+        '/': operator.floordiv, # to avoid having floats, and thene error because of that
+        'and': operator.and_,
+        'or': operator.or_,
+        'xor': operator.xor,
+    }
+    op_func = OPERATORS.get(operation.lower())
+    if op_func is None:
+        raise ValueError(f"Unsupported operator: {operation}")
+    return op_func(left, right)
+
+def evaluate_expression(expr, metadata):
+    def find_bracket_ranges(expr): # Function to find nested [] if they are in the left side of the operator.
+        stack = []
+        ranges = []
+        for i, char in enumerate(expr):
+            if char == '[':
+                stack.append(i) # We decided to use a stack inspired by pushdowns automatas, to check if im inside a nested []
+            elif char == ']':
+                start = stack.pop()
+                ranges.append((start, i))
+        return ranges
+    # Función para comprobar si un índice está dentro de algún rango de corchetes
+    def is_inside_brackets(index, ranges):
+        for start, end in ranges:
+            if start < index < end:
+                return True
+        return False
+    
+    bracket_ranges = find_bracket_ranges(expr) # Return the indixes of the [] to check if the operator is inside or if it is okey to do the funciton.
+
+    pattern = re.compile(r'([+\-*/]|and|or|xor)', re.IGNORECASE) # look for operators.
+
+    for match in pattern.finditer(expr): # Look for operators outside the []
+        op = match.group(0)
+        index = match.start()
+        if not is_inside_brackets(index, bracket_ranges): # Cheecks that the operator is outside the []
+            left = expr[:index].strip()
+            right = expr[index + len(op):].strip()
+            args = [left, right]
+            return solve_expression(args, op, metadata)
 
 def do_set(args, metadata):
     assert len(args) == 2, "Expected exactly 2 arguments: name and value"
@@ -140,12 +212,20 @@ def do(expr, metadata):
     if isinstance(expr, int):
         return expr
 
-    assert isinstance(expr, list)
+    if isinstance(expr, str):
+        return evaluate_expression(expr, metadata)
+
+    assert isinstance(expr, list), f"Expected expr to be a list, got {type(expr)}: {expr}"
+
+    if len(expr) == 1 and isinstance(expr[0], str):
+        return evaluate_expression(expr[0], metadata)
+    
     operation = expr[0]
-    assert operation in OPS, f"Unknown operation {operation}"
-
-    return OPS[operation](expr[1:], metadata)
-
+    if operation in OPS:
+        return OPS[operation](expr[1:], metadata)
+    else:
+        raise ValueError(f"Unknown operation: {operation}")
+        
 def do_sequence(args, metadata):
     assert len(args) > 0
     result = None
@@ -159,16 +239,59 @@ def do_add(args, metadata):
     right = do(args[1], metadata)
     return left + right
 
+def do_substract(args, metadata):
+    assert len(args) == 2
+    left = do(args[0], metadata)
+    right = do(args[1], metadata)
+    return left - right
+
+def do_multiplication(args, metadata):
+    assert len(args) == 2
+    left = do(args[0], metadata)
+    right = do(args[1], metadata)
+    return left * right
+
+def do_divition(args, metadata):
+    assert len(args) == 2
+    left = do(args[0], metadata)
+    right = do(args[1], metadata)
+    assert right != 0, "Error: divition by 0"
+    return left // right
+
+def do_or(args, metadata):
+    assert len(args) == 2
+    left = do(args[0], metadata)
+    right = do(args[1], metadata)
+    return left or right
+
+def do_and(args, metadata):
+    assert len(args) == 2
+    left = do(args[0], metadata)
+    right = do(args[1], metadata)
+    return left and right
+
+def do_xor(args, metadata):
+    assert len(args) == 2
+    left = do(args[0], metadata)
+    right = do(args[1], metadata)
+    return left ^ right
+
+def do_absolute(args, metadata):
+    assert len(args) == 1
+    val = do(args[0], metadata)
+    return abs(val)
+
 def do_power(args, metadata):
     assert len(args) == 2
     num = do(args[0], metadata)
     power = do(args[1], metadata)
     return num ** power
 
+# Dynamically find and name all operations we support in our language
 OPS = {
-    name.replace('do_', ''): func 
-    for name, func in globals().items() 
-    if name.startswith('do_')
+    name.replace("do_", ""): func
+    for (name, func) in globals().items()
+    if name.startswith("do_")
 }
 
 def main():
