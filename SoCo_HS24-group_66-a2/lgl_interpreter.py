@@ -258,6 +258,11 @@ def do_divition(args, metadata):
     assert right != 0, "Error: divition by 0"
     return left // right
 
+def do_absolute(args, metadata):
+    assert len(args) == 1
+    num = do(args[0], metadata)
+    return abs(num)
+
 def do_or(args, metadata):
     assert len(args) == 2
     left = do(args[0], metadata)
