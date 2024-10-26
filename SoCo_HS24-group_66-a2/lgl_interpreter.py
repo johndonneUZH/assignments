@@ -55,21 +55,8 @@ def convert_value(val):
         except (ValueError, SyntaxError):
             raise ValueError(f"'{val}' is neither a number nor a list.")
 
-def expresion_add():
-    pass
-def expresion_sub():
-    pass
-def expresion_mul():
-    pass
-def expresion_div():
-    pass
-def expresion_and():
-    pass
-def expresion_or():
-    pass
-def expresion_xor():
-    pass
-
+def expressions_xor(a, b):
+    return bool(a) ^ bool(b)
 def solve_expression(args, operation, metadata):
     assert len(args) == 2, f"Expected two arguments, got {len(args)}"
     left = do(convert_value(args[0]), metadata)     # Convert the arguments to values (numbers or nested expressions)
@@ -120,9 +107,6 @@ def evaluate_expression(expr, metadata):
             args = [left, right]
             return solve_expression(args, op, metadata)
 
-
-
-
 def do_add(args, metadata):
     assert len(args) == 2
     left = do(args[0], metadata)
@@ -146,7 +130,7 @@ def do_divition(args, metadata):
     left = do(args[0], metadata)
     right = do(args[1], metadata)
     assert right != 0, "Error: divition by 0"
-    return left / right
+    return left // right
 
 def do_or(args, metadata):
     assert len(args) == 2
