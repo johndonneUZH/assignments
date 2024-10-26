@@ -42,19 +42,34 @@ def convert_value(val):
             if inner.startswith("'") and inner.endswith("'"):
                 inner_str = inner[1:-1]
                 result = [inner_str]
-                return result #Tries to see if it is a list
-            else:
+                return result #Tries to see if it is a list inside a string and turns into a list so can be further analyzed
+            else: # Checks if the list is already in list format.
                 try:
                     result = ast.literal_eval(val)
                     if isinstance(result, list):
                         return result #Tries to see if it is a list
                     else:
-                       raise ValueError(f"'{val}' is neither a number nor a list.")
+                        raise ValueError(f"'{val}' is neither a number nor a list.")
                 except:
-                    pass
+                    raise ValueError(f"'{val}' is neither a number nor a list.")
         except (ValueError, SyntaxError):
             raise ValueError(f"'{val}' is neither a number nor a list.")
-            
+
+def expresion_add():
+    pass
+def expresion_sub():
+    pass
+def expresion_mul():
+    pass
+def expresion_div():
+    pass
+def expresion_and():
+    pass
+def expresion_or():
+    pass
+def expresion_xor():
+    pass
+
 def solve_expression(args, operation, metadata):
     assert len(args) == 2, f"Expected two arguments, got {len(args)}"
     left = do(convert_value(args[0]), metadata)     # Convert the arguments to values (numbers or nested expressions)
@@ -75,15 +90,37 @@ def solve_expression(args, operation, metadata):
     return op_func(left, right)
 
 def evaluate_expression(expr, metadata):
-    match = re.search(r'([+\-*/]|and|or|xor)', expr, re.IGNORECASE) # gets the expression
-    assert match, f"Not a valid expression: {expr}" # if there is not valid expression then error
-    operation = match.group(0) # gets the exact expression that he got
-    index = expr.find(operation)
-    left = expr[:index].strip()
-    right = expr[index + 1:].strip()
-    args = [left, right]
-    # use search
-    return solve_expression(args, operation, metadata)
+    def find_bracket_ranges(expr): # Function to find nested [] if they are in the left side of the operator.
+        stack = []
+        ranges = []
+        for i, char in enumerate(expr):
+            if char == '[':
+                stack.append(i) # We decided to use a stack inspired by pushdowns automatas, to check if im inside a nested []
+            elif char == ']':
+                start = stack.pop()
+                ranges.append((start, i))
+        return ranges
+    # Función para comprobar si un índice está dentro de algún rango de corchetes
+    def is_inside_brackets(index, ranges):
+        for start, end in ranges:
+            if start < index < end:
+                return True
+        return False
+    
+    bracket_ranges = find_bracket_ranges(expr) # Return the indixes of the [] to check if the operator is inside or if it is okey to do the funciton.
+
+    pattern = re.compile(r'([+\-*/]|and|or|xor)', re.IGNORECASE) # look for operators.
+
+    for match in pattern.finditer(expr): # Look for operators outside the []
+        op = match.group(0)
+        index = match.start()
+        if not is_inside_brackets(index, bracket_ranges): # Cheecks that the operator is outside the []
+            left = expr[:index].strip()
+            right = expr[index + len(op):].strip()
+            args = [left, right]
+            return solve_expression(args, op, metadata)
+
+
 
 
 def do_add(args, metadata):
@@ -203,7 +240,6 @@ def do(expr, metadata):
         return evaluate_expression(expr[0], metadata)
     
     operation = expr[0]
-    print(operation)
     if operation in OPS:
         return OPS[operation](expr[1:], metadata)
     else:
