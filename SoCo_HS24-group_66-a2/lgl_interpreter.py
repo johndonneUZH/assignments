@@ -88,7 +88,7 @@ def solve_expression(args, operation, metadata):
 
 def evaluate_expression(expr, metadata):
     def find_bracket_ranges(expr): # Function to find nested [] if they are in the left side of the operator.
-        stack = []
+        stack = []  
         ranges = []
         for i, char in enumerate(expr):
             if char == '[':
