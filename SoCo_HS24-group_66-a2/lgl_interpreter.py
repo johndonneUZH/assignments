@@ -129,7 +129,13 @@ def do_set(args, metadata):
             params = [params]
         body = value[2]
 
-        metadata['functions'][keyword] = createFunctionObject(params, body)
+        if metadata['in_function']:
+            parent_func = metadata['in_function']
+            child_func = createFunctionObject(params, body, metadata['functions'][parent_func]['scope'])
+        else:
+            child_func = createFunctionObject(params, body)
+
+        metadata['functions'][keyword] = child_func
         return metadata['functions'][keyword]
 
     value = do(value, metadata)
