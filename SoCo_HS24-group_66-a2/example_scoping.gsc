@@ -1,27 +1,27 @@
 [
     "sequence",
-    ["set", "get_cube_power", 
-        ["function", "x", 
-            ["power", ["get", "x"], 3]
+    ["set", "do_my_multiplication", 
+        ["function", ["a", "b"], 
+            ["multiplication", ["get", "a"], ["get", "b"]]
         ]
-    ],
-    ["set", "add_cubes", 
-        ["function", ["a", "b"],
+    ],  
+    ["set", "outer_func", 
+        ["function", "x", 
             ["sequence", 
-                ["set", "result", 
-                    ["add", 
-                        ["call", "get_cube_power", ["get", "a"]],  
-                        ["call", "get_cube_power", ["get", "b"]] 
+                ["set", "middle_func", 
+                    ["function", "y", 
+                        ["sequence",
+                            ["set", "x", ["add", ["get", "x"], 10]], 
+                            ["set", "inner_func", 
+                                ["function", [], ["call", "do_my_multiplication", ["get", "x"], ["get", "y"]]]
+                            ],
+                            ["call", "inner_func"]
+                        ]
                     ]
                 ],
-                ["set", "sub",
-                    ["function", "z", 
-                        ["set", "inner", ["absolute", -1000]]
-                    ]
-                ],
-                ["add", ["get", "result"], ["call", "sub", 32]]
+                ["call", "middle_func", 3]
             ]
         ]
     ],
-    ["call", "add_cubes", 2, 4]
+    ["call", "outer_func", 4]
 ]
