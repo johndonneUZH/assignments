@@ -1,5 +1,6 @@
 import csv, sys
 from datetime import datetime
+from time import perf_counter
 
 
 def summary_stats(trace_file):
@@ -14,11 +15,11 @@ def summary_stats(trace_file):
                 summary_calls[func_name] = []
             
             if event_type == "start":
-                summary_calls[func_name].append({"id": call_id, "start_time": datetime.fromisoformat(timestamp), "end_time":None})
+                summary_calls[func_name].append({"id": call_id, "start_time": perf_counter(), "end_time":None})
             elif event_type == "stop":
                  for call in summary_calls[func_name]: 
                     if call["id"] == call_id and call["end_time"] is None:
-                        call["end_time"] = datetime.fromisoformat(timestamp)
+                        call["end_time"] = perf_counter()
                         break #only one end per id
     return summary_calls
 
@@ -30,7 +31,8 @@ def calculate_stats(calls):
 
         for entry in entries:
             if entry["end_time"] is not None:
-                total_time += (entry["end_time"] - entry["start_time"]).total_seconds()*1000.0  #display in ms
+                
+                total_time += (entry["end_time"] - entry["start_time"])*1000.0  #display in ms
                 num_calls += 1
 
         if num_calls > 0:
