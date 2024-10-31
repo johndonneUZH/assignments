@@ -1,4 +1,7 @@
-import sys, json, re, ast, operator, pprint
+import sys, json, re, ast, operator, pprint, random, csv
+from functools import wraps
+from datetime import datetime
+from time import time
 
 ##############################################
 ################## SCOPES ####################
@@ -109,9 +112,24 @@ def do_call(args, metadata):
     if metadata['in_function'] != func_name:
         caller_func = metadata['in_function']
 
+    if metadata['trace_file']: #if there is tracing
+        call_id = random.randint(100000, 999999) #random id for function call
+        start_time = datetime.now()#so reporting.py has exact numbers to calculate
+        with open(metadata['trace_file'], mode="a", newline = "") as f:
+            writer = csv.writer(f)
+            writer.writerow([call_id, start_time, func_name, "start"])
+
+    
+
     enter_function(func_name, metadata)
     result = do(body, metadata)
     exit_function(metadata)
+
+    if metadata['trace_file']: #finish the tracing when executed
+        end_time = datetime.now()
+        with open(metadata['trace_file'], mode="a", newline = "") as f:
+            writer = csv.writer(f)
+            writer.writerow([call_id, end_time, func_name, "stop"])
 
     if caller_func:
         metadata['in_function'] = caller_func
@@ -321,7 +339,20 @@ OPS = {
 ##############################################
 
 def main():
-    assert len(sys.argv) == 2   # Usage: python lgl_interpreter.py code.gsc
+    assert len(sys.argv) == 2 or len(sys.argv) == 4  # Usage: python lgl_interpreter.py code.gsc
+                                                    # Usage: python lgl_interpreter.py code.gsc --trace trace_file.log
+    
+    trace_file = None #No trace file by default
+    if len(sys.argv) > 2 and sys.argv[2] == "--trace":
+        if len(sys.argv) != 4:
+            raise ValueError("file path not correctly provided")
+        trace_file = sys.argv[3]
+
+        with open(trace_file, mode = 'w', newline = '') as f: #initialize trace file
+            writer = csv.writer(f)
+            writer.writerow(['id', 'timestamp', 'function_name', 'event'])
+
+
     with open(sys.argv[1]) as source:
         program = json.load(source)
 
@@ -329,12 +360,14 @@ def main():
         'in_function': None,
         'globals': GLOBAL_SCOPE,
         'functions': {},
+        'trace_file': trace_file 
     }
 
     print('BUILT-IN FUNCTIONS | ' + ', '.join(OPS.keys()))
     result = do(program, metadata)
     print('USER-DEFINED FUNCTIONS | ' + ', '.join(metadata['functions'].keys()))
     print('RESULT |', result)
+
 
 if __name__ == "__main__":
     main()
