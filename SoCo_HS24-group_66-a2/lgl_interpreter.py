@@ -2,6 +2,7 @@ import sys, json, re, ast, operator, pprint, random, csv
 from functools import wraps
 from datetime import datetime
 from time import time
+import secrets
 
 ##############################################
 ################## SCOPES ####################
@@ -45,6 +46,32 @@ class Scope:
         return str(self.locals)
     
 ##############################################
+############### DECORATOR ####################
+##############################################
+
+def trace(func):
+    def wrapper(args, metadata):
+        func_name = args[0]  # Get the specific function name from arguments
+
+        if metadata['trace_file']:
+            call_id = secrets.token_hex(3)
+            start_time = datetime.now()
+            with open(metadata['trace_file'], mode="a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([call_id, start_time, func_name, "start"])
+
+        result = func(args, metadata)
+
+        if metadata['trace_file']:
+            end_time = datetime.now()
+            with open(metadata['trace_file'], mode="a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([call_id, end_time, func_name, "stop"])
+
+        return result
+    return wrapper
+
+##############################################
 ############# UTILITY FUNCTIONS ##############
 ##############################################
 
@@ -79,6 +106,7 @@ def do_set(args, metadata):
         metadata['globals'].set(keyword, value)
     return value
 
+@trace
 def do_call(args, metadata):
     assert len(args) >= 1, "Expected at least one argument"
     assert isinstance(args[0], str), "First argument must be the function name"
@@ -112,24 +140,9 @@ def do_call(args, metadata):
     if metadata['in_function'] != func_name:
         caller_func = metadata['in_function']
 
-    if metadata['trace_file']: #if there is tracing
-        call_id = random.randint(100000, 999999) #random id for function call
-        start_time = datetime.now()#so reporting.py has exact numbers to calculate
-        with open(metadata['trace_file'], mode="a", newline = "") as f:
-            writer = csv.writer(f)
-            writer.writerow([call_id, start_time, func_name, "start"])
-
-    
-
     enter_function(func_name, metadata)
     result = do(body, metadata)
     exit_function(metadata)
-
-    if metadata['trace_file']: #finish the tracing when executed
-        end_time = datetime.now()
-        with open(metadata['trace_file'], mode="a", newline = "") as f:
-            writer = csv.writer(f)
-            writer.writerow([call_id, end_time, func_name, "stop"])
 
     if caller_func:
         metadata['in_function'] = caller_func
