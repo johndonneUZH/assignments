@@ -1,10 +1,24 @@
 import csv, sys
 from datetime import datetime
-from time import perf_counter
 from prettytable import PrettyTable
 from collections import defaultdict
 
 def summary_stats(trace_file):
+    # Create a dictionary to store call logs for each function
+    # The dictionary will have function names as keys and a dictionary of call logs as values
+    # Each call log will have call ID as key and a dictionary of start and end times as values
+    # Example: {"foo": {
+    #               "b59bb6": {
+    #                       "start_time": "2021-09-01 12:00:00.000", 
+    #                       "end_time": "2021-09-01 12:00:01.000"
+    #                       }
+    #               },
+    #               "93f243": {
+    #                       "start_time": "2021-09-01 12:00:00.000", 
+    #                       "end_time": "2021-09-01 12:00:01.000"
+    #                       }
+    #               }
+    #          }
     summary_calls = defaultdict(dict)
 
     with open(trace_file, newline="") as f:
@@ -12,10 +26,6 @@ def summary_stats(trace_file):
         next(reader) # Skip the header row
         for row in reader:
             call_id, timestamp, func_name, event_type = row
-
-            # Initialize entry for func_name if not already present
-            if func_name not in summary_calls:
-                summary_calls[func_name] = {}
 
             # Handle "start" events by storing start time for each call_id
             if event_type == "start":
@@ -28,8 +38,6 @@ def summary_stats(trace_file):
                 summary_calls[func_name][call_id]["end_time"] = timestamp
 
     return summary_calls
-
-from datetime import datetime
 
 def calculate_stats(calls):
     stats = []
@@ -53,7 +61,6 @@ def calculate_stats(calls):
             stats.append((func_name, num_calls, f'{total_time:.3f}', f'{avrg_time:.3f}'))
 
     return stats
-
 
 def display_stats(stats):
     table = PrettyTable(["Function Name", "Num. of calls", "Total Time (ms)", "Average Time (ms)"])
