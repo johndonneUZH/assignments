@@ -74,6 +74,36 @@ def trace(func):
     return wrapper
 
 ##############################################
+############### DECORATOR ####################
+##############################################
+
+def trace(func):
+    def wrapper(args, metadata):
+        func_name = args[0]  # Get the specific function name from arguments
+
+        # If trace file is provided, write the function call event to the file
+        if metadata['trace_file']:
+            call_id = secrets.token_hex(3) # Generate a unique call ID for each function call
+            start_time = datetime.now() # Get the current timestamp
+            # Write the function call event to the trace file
+            with open(metadata['trace_file'], mode="a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([call_id, start_time, func_name, "start"])
+
+        # Call the function and get the result
+        result = func(args, metadata)
+
+        if metadata['trace_file']:
+            end_time = datetime.now() # Get the current timestamp
+            with open(metadata['trace_file'], mode="a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([call_id, end_time, func_name, "stop"])
+        # Return the result of the function call
+        return result
+    # Return the wrapper function
+    return wrapper
+
+##############################################
 ############# UTILITY FUNCTIONS ##############
 ##############################################
 
@@ -144,15 +174,16 @@ def do_call(args, metadata):
     original_scope = func_data['scope']
     func_data['scope'] = call_scope
 
+    # If the function is called from another function, update the caller function name
     caller_func = None
     if metadata['in_function'] != func_name:
         caller_func = metadata['in_function']
 
-    enter_function(func_name, metadata)
-    result = do(body, metadata)
-    exit_function(metadata)
+    enter_function(func_name, metadata) # Enter the function
+    result = do(body, metadata) # Execute the function body
+    exit_function(metadata) # Exit the function
 
-    if caller_func:
+    if caller_func: # Restore the caller function name in metadata
         metadata['in_function'] = caller_func
 
     # Restore the original scope after execution
@@ -207,7 +238,7 @@ def createFunctionObject(params, body, parent=None):
 
 def enter_function(func_name, metadata):
     metadata['in_function'] = func_name
-
+ 
 def exit_function(metadata):
     metadata['in_function'] = None
 
@@ -230,10 +261,10 @@ def convert_value(val):
     except ValueError:
         try:            
             inner = val.strip()[1:-1].strip()
-            if inner.startswith("'") and inner.endswith("'"):
-                inner_str = inner[1:-1]
+            if inner.startswith("'") and inner.endswith("'"): # Checks if the string is inside a list and turns into a string so can be further analyzed
+                inner_str = inner[1:-1] 
                 result = [inner_str]
-                return result #Tries to see if it is a list inside a string and turns into a list so can be further analyzed
+                return result # Tries to see if it is a list inside a string and turns into a list so can be further analyzed
             else: # Checks if the list is already in list format.
                 try:
                     result = ast.literal_eval(val)
@@ -249,9 +280,10 @@ def convert_value(val):
 
 def solve_expression(args, operation, metadata):
     assert len(args) == 2, f"Expected two arguments, got {len(args)}"
-    left = do(convert_value(args[0]), metadata)     # Convert the arguments to values (numbers or nested expressions)
+    left = do(convert_value(args[0]), metadata) # Convert the arguments to values (numbers or nested expressions)
     right = do(convert_value(args[1]), metadata)
-    #We do it this way to avoid using eval() and avoiding else if statements
+
+    # We do it this way to avoid using eval() and avoiding else if statements
     OPERATORS = {
         '+': operator.add,
         '-': operator.sub,
@@ -262,12 +294,14 @@ def solve_expression(args, operation, metadata):
         'xor': operator.xor,
     }
     op_func = OPERATORS.get(operation.lower())
+    # Check if the operator is supported
     if op_func is None:
         raise ValueError(f"Unsupported operator: {operation}")
     return op_func(left, right)
 
 def evaluate_expression(expr, metadata):
     expr = evaluate_gets_in_expression(expr, metadata)
+    
     def find_bracket_ranges(expr): # Function to find nested [] if they are in the left side of the operator.
         stack = []  
         ranges = []
@@ -278,6 +312,7 @@ def evaluate_expression(expr, metadata):
                 start = stack.pop()
                 ranges.append((start, i))
         return ranges
+
     def is_inside_brackets(index, ranges):
         for start, end in ranges:
             if start < index < end:
@@ -288,8 +323,8 @@ def evaluate_expression(expr, metadata):
     pattern = re.compile(r'([+\-*/]|and|or|xor)', re.IGNORECASE) # look for operators.
 
     for match in pattern.finditer(expr): # Look for operators outside the []
-        op = match.group(0)
-        index = match.start()
+        op = match.group(0) # Get the operator
+        index = match.start() # Get the index of the operator
         if not is_inside_brackets(index, bracket_ranges): # Cheecks that the operator is outside the []
             left = expr[:index].strip()
             right = expr[index + len(op):].strip()
