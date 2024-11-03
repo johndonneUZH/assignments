@@ -42,7 +42,37 @@ class Scope:
 
     def __str__(self):
         return str(self.locals)
-    
+
+##############################################
+############### DECORATOR ####################
+##############################################
+
+def trace(func):
+    def wrapper(args, metadata):
+        func_name = args[0]  # Get the specific function name from arguments
+
+        # If trace file is provided, write the function call event to the file
+        if metadata['trace_file']:
+            call_id = secrets.token_hex(3) # Generate a unique call ID for each function call
+            start_time = datetime.now() # Get the current timestamp
+            # Write the function call event to the trace file
+            with open(metadata['trace_file'], mode="a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([call_id, start_time, func_name, "start"])
+
+        # Call the function and get the result
+        result = func(args, metadata)
+
+        if metadata['trace_file']:
+            end_time = datetime.now() # Get the current timestamp
+            with open(metadata['trace_file'], mode="a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([call_id, end_time, func_name, "stop"])
+        # Return the result of the function call
+        return result
+    # Return the wrapper function
+    return wrapper
+
 ##############################################
 ############### DECORATOR ####################
 ##############################################
@@ -173,7 +203,7 @@ def do_get(args, metadata):
             return active_scope.get(keyword)
         except NameError:
             pass
-
+    
     return metadata['globals'].get(keyword)
 
 def do(expr, metadata):
@@ -184,6 +214,7 @@ def do(expr, metadata):
         return evaluate_expression(expr, metadata)
 
     assert isinstance(expr, list), f"Expected expr to be a list, got {type(expr)}: {expr}"
+
 
     if len(expr) == 1 and isinstance(expr[0], str):
         return evaluate_expression(expr[0], metadata)
@@ -211,11 +242,24 @@ def enter_function(func_name, metadata):
 def exit_function(metadata):
     metadata['in_function'] = None
 
+def evaluate_gets_in_expression(expr, metadata):
+    pattern = re.compile(r'\[\s*\'get\'\s*,\s*\'([^\']+)\'\s*\]')
+    while True:
+        match = pattern.search(expr)
+        if not match:
+            break
+        var_name = match.group(1)
+        value = do_get([var_name], metadata)
+        # Replace the 'get' expression with its value in the expression
+        expr = expr[:match.start()] + str(value) + expr[match.end():]
+    return expr
+
+
 def convert_value(val):
     try:
         return int(val) # First, try to convert the value to an integer
     except ValueError:
-        try:
+        try:            
             inner = val.strip()[1:-1].strip()
             if inner.startswith("'") and inner.endswith("'"): # Checks if the string is inside a list and turns into a string so can be further analyzed
                 inner_str = inner[1:-1] 
@@ -232,6 +276,7 @@ def convert_value(val):
                     raise ValueError(f"'{val}' is neither a number nor a list.")
         except (ValueError, SyntaxError):
             raise ValueError(f"'{val}' is neither a number nor a list.")
+
 
 def solve_expression(args, operation, metadata):
     assert len(args) == 2, f"Expected two arguments, got {len(args)}"
@@ -255,9 +300,10 @@ def solve_expression(args, operation, metadata):
     return op_func(left, right)
 
 def evaluate_expression(expr, metadata):
+    expr = evaluate_gets_in_expression(expr, metadata)
     
     def find_bracket_ranges(expr): # Function to find nested [] if they are in the left side of the operator.
-        stack = []
+        stack = []  
         ranges = []
         for i, char in enumerate(expr):
             if char == '[':
@@ -267,7 +313,6 @@ def evaluate_expression(expr, metadata):
                 ranges.append((start, i))
         return ranges
 
-    # Function to check if an index is inside any bracket range
     def is_inside_brackets(index, ranges):
         for start, end in ranges:
             if start < index < end:
@@ -275,7 +320,6 @@ def evaluate_expression(expr, metadata):
         return False
     
     bracket_ranges = find_bracket_ranges(expr) # Return the indixes of the [] to check if the operator is inside or if it is okey to do the funciton.
-
     pattern = re.compile(r'([+\-*/]|and|or|xor)', re.IGNORECASE) # look for operators.
 
     for match in pattern.finditer(expr): # Look for operators outside the []
@@ -287,10 +331,11 @@ def evaluate_expression(expr, metadata):
             args = [left, right]
             return solve_expression(args, op, metadata)
 
+
 ##############################################
 ############## OPERATIONS ####################
 ##############################################
-  
+
 def do_sequence(args, metadata):
     assert len(args) > 0
     result = None
