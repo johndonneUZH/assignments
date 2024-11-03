@@ -74,36 +74,6 @@ def trace(func):
     return wrapper
 
 ##############################################
-############### DECORATOR ####################
-##############################################
-
-def trace(func):
-    def wrapper(args, metadata):
-        func_name = args[0]  # Get the specific function name from arguments
-
-        # If trace file is provided, write the function call event to the file
-        if metadata['trace_file']:
-            call_id = secrets.token_hex(3) # Generate a unique call ID for each function call
-            start_time = datetime.now() # Get the current timestamp
-            # Write the function call event to the trace file
-            with open(metadata['trace_file'], mode="a", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([call_id, start_time, func_name, "start"])
-
-        # Call the function and get the result
-        result = func(args, metadata)
-
-        if metadata['trace_file']:
-            end_time = datetime.now() # Get the current timestamp
-            with open(metadata['trace_file'], mode="a", newline="") as f:
-                writer = csv.writer(f)
-                writer.writerow([call_id, end_time, func_name, "stop"])
-        # Return the result of the function call
-        return result
-    # Return the wrapper function
-    return wrapper
-
-##############################################
 ############# UTILITY FUNCTIONS ##############
 ##############################################
 
