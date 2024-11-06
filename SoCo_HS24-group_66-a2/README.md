@@ -154,3 +154,26 @@ The `do_get` function retrieves variables from the appropriate scope by checking
 ---
 # Infix Operations in GSC
 
+---
+# Tracing in GSC
+
+First we check in main() if there is a need for a trace_file. If needed, one is created and a csv header with column names are written. The file path is kept in the metadata. This enables tracing based on depending on the availability of a trace_file.
+
+This project implements a tracing system that when a function is called, it logs the calls and their timing and entry and exit points. It is implemented with Python's decorator, here with "@trace".
+
+### **trace()**
+In the trace function we use a wrapper. If there exists a trace_file, an unique call_id is created. The uniqueness is guaranteed with the funcation secrets.token_hex(3). It records the entry time. with datetime.now(), as to guarantee high-precision timing. The event "start" is logged. Next, the input function is executed. The exit time is recorded and the event "stop" is logged.
+
+
+---
+# Reporting.py
+This file analyzes trace logs generated from the LGL interpreter. It produces a summary report of each function and its' performance.
+
+### **summary_stats()**
+    This function reads the csv trace file from the lgl_interpreter and organzises the data by their function name. A dictionary is initialized. It distincts the different calls through their call ID, matching start and stop events in the trace logs. If the trace file is faulty, a ValueError is raised.
+
+### **calculate_stats()**
+    The function calculate_stats() processes the collected data of summary_stats(). It caluclates the number of calls per function, total execution time in millieseconde and the average exection per call. As to not have duplicates, a list of tuples is returned with the calculated statistics.
+
+### **display()**
+    This function displays the statistics that were caluclated in calculate_stats. THe output is fomatted with the use of PrettyTable.
