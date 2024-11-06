@@ -169,11 +169,11 @@ In the trace function we use a wrapper. If there exists a trace_file, an unique 
 # Reporting.py
 This file analyzes trace logs generated from the LGL interpreter. It produces a summary report of each function and its' performance.
 
-### summary_stats():
+### **summary_stats()**
     This function reads the csv trace file from the lgl_interpreter and organzises the data by their function name. A dictionary is initialized. It distincts the different calls through their call ID, matching start and stop events in the trace logs. If the trace file is faulty, a ValueError is raised.
 
-### calculate_stats():
+### **calculate_stats()**
     The function calculate_stats() processes the collected data of summary_stats(). It caluclates the number of calls per function, total execution time in millieseconde and the average exection per call. As to not have duplicates, a list of tuples is returned with the calculated statistics.
 
-### display():
+### **display()**
     This function displays the statistics that were caluclated in calculate_stats. THe output is fomatted with the use of PrettyTable.
