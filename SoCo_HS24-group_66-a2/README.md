@@ -154,3 +154,95 @@ The `do_get` function retrieves variables from the appropriate scope by checking
 ---
 # Infix Operations in GSC
 
+Our languge can "call" functions using two forms, the first one is inside a dictionay stating the name of the function to call and the parameters or by giving a string that contains a special character that indicates an arimetical operation such as '+', '-' and so on. Both types of calling are evaluated with the `do()` recursively.
+
+### **do()**
+The `do()` function is the main evaluation function, based on the type of the argument `expr`: integers, str, lists.
+
+### Parameters:
+- `expr` is the function to ve evaluates, can be in "any" form as long it is lexically correct.
+- `metadata` is the dictionary that tracks the current state of global and local variables, functions, and scope context.
+
+### Breakdown:
+1. **Input Validation**: Ensures that the `expr` is eaither a number, a string, a list of one value (which is a string) or a list with the first value as a string but with more values. 
+
+2. **Returnign values with if conditions**: Checks the type of `expr`:
+     - if `expr` is an int, it is the base case and returs the same number.
+     - if `expr` is a string, it returns the value after `expr` is evaluated with `evaluate_expression()`
+     - if `expr` is a list, has a length of 1 and that value is a string then  `expr` is evaluated with `evaluate_expression()`, this is important for nested expresions and decide the order it is deocomposed.
+     - if `expr` is a list, and the first value is a str, then the operation is found and it is evaluated with help of the OPS dictionary that contains all the functions that are called in the traditional way.
+      
+3. **Defencing codign**:
+      - if `expr` is not an int nor a str nor a list, it raises an error.
+      - if the operation is not in OPS raises an error as a not known operation.
+
+### `OPS` and `do()_` functions:
+
+We decide to have a dictionary OPS so the functions can be called dynamically and it is easy to scale. 
+
+### Breakdown:
+
+1. **Creattion of OPS**: OPS is a dictionary comprehension that loops through the global variables looking for the functions that starts with do_. The keys are the name without the "do_" so it is easier to call in the LGL and the value is the function itself.
+   
+2. **`do_()` functions**.
+      - These functions take arguments and metada as arguments. Depending on the function first asserts the number of arguments, if different it rasies an error.
+        ```python
+         def do_multiplication(args, metadata):
+              assert len(args) == 2
+
+      - Then separates the left and the rigth value as left and rigth by setting variables inside the `do()_` functions. However it is not set that easily, insead of just setting the variables with the value, it calls the `do()` function with the value, this is the recursive part, as it allows nested expresions and it will just retrun a value when all the operations inside the left or rigth are computed.
+        ```python
+        left = do(args[0], metadata)
+        right = do(args[1], metadata)
+        
+      - Finally it returns the result of the expresions with the left and the rigth value.
+        ```python
+        return left * right
+
+### `evaluate_expression()` :
+
+### Breakdown:
+
+A generall view of this function and its helpers is: 
+    - First: tries to turn get a value calling  `evaluate_gets_in_expression()`, which at the same time calls `do_get()`
+    - Second: looks for the operators inside the expression, but if the operator is inside a list (brackets) it ignores it with help of the in-defined function `find_bracket_ranges()`, so the operations are executed in the rigth order. 
+    - Third: if the operator is not inisde brackets, the expression will be divided in three, a rigth part a left part and the operator. The arguments are put in a list and the `solve_expression()` function is called.
+    
+- #### `def evaluate_gets_in_expression()`:
+     - TODO
+- #### `find_bracket_ranges()`:
+     - TODO
+- #### `is_inside_brackets()`:
+     - TODO
+
+
+### `solve_expression()` and helper functions:
+
+### Breakdown:
+
+- #### `convert_value()`:
+     - TODO
+   
+---
+# Tracing in GSC
+
+First we check in main() if there is a need for a trace_file. If needed, one is created and a csv header with column names are written. The file path is kept in the metadata. This enables tracing based on depending on the availability of a trace_file.
+
+This project implements a tracing system that when a function is called, it logs the calls and their timing and entry and exit points. It is implemented with Python's decorator, here with "@trace".
+
+### **trace()**
+In the trace function we use a wrapper. If there exists a trace_file, an unique call_id is created. The uniqueness is guaranteed with the funcation secrets.token_hex(3). It records the entry time. with datetime.now(), as to guarantee high-precision timing. The event "start" is logged. Next, the input function is executed. The exit time is recorded and the event "stop" is logged.
+
+
+---
+# Reporting.py
+This file analyzes trace logs generated from the LGL interpreter. It produces a summary report of each function and its' performance.
+
+### **summary_stats()**
+    This function reads the csv trace file from the lgl_interpreter and organzises the data by their function name. A dictionary is initialized. It distincts the different calls through their call ID, matching start and stop events in the trace logs. If the trace file is faulty, a ValueError is raised.
+
+### **calculate_stats()**
+    The function calculate_stats() processes the collected data of summary_stats(). It caluclates the number of calls per function, total execution time in millieseconde and the average exection per call. As to not have duplicates, a list of tuples is returned with the calculated statistics.
+
+### **display()**
+    This function displays the statistics that were caluclated in calculate_stats. THe output is fomatted with the use of PrettyTable.
