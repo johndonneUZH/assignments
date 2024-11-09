@@ -249,7 +249,7 @@ It returns an integer after applying `operation` to the evaluated left and right
          - Returns an integer if `val` can be converted to one.
          - Returns a list if `val` represents a single string element within a list or if it’s a list structure that ast.literal_eval can parse. Useful for recursivity as it will be called by `do()`
          - Raises a ValueError if `val` cannot be interpreted as either an integer or a list.
----
+
 # Tracing in GSC
 
 First we check in main() if there is a need for a trace_file. If needed, one is created and a csv header with column names are written. The file path is kept in the metadata. This enables tracing based on depending on the availability of a trace_file.
