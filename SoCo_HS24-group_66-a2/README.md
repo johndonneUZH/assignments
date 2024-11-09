@@ -154,7 +154,7 @@ The `do_get` function retrieves variables from the appropriate scope by checking
 ---
 # Infix Operations in GSC
 
-Our languge can "call" functions using two forms, the first one is inside a dictionay stating the name of the function to call and the parameters or by giving a string that contains a special character that indicates an arimetical operation such as '+', '-' and so on. Both types of calling are evaluated with the `do()` recursively.
+Our languge can "call" functions using two forms, the first one is inside a dictionay stating the name of the function to call and the parameters or by giving a string that contains a special character that indicates an arimetical operation such as '+', '-' and so on. Both types of calls are evaluated with the `do()` recursively.
 
 ### **do()**
 The `do()` function is the main evaluation function, based on the type of the argument `expr`: integers, str, lists.
@@ -169,8 +169,8 @@ The `do()` function is the main evaluation function, based on the type of the ar
 2. **Returnign values with if conditions**: Checks the type of `expr`:
      - if `expr` is an int, it is the base case and returs the same number.
      - if `expr` is a string, it returns the value after `expr` is evaluated with `evaluate_expression()`
-     - if `expr` is a list, has a length of 1 and that value is a string then  `expr` is evaluated with `evaluate_expression()`, this is important for nested expresions and decide the order it is deocomposed.
-     - if `expr` is a list, and the first value is a str, then the operation is found and it is evaluated with help of the OPS dictionary that contains all the functions that are called in the traditional way.
+     - if `expr` is a list, has a length of 1 and that value is a string then  `expr` is evaluated with `evaluate_expression()`, this is important for nested expressions and decides the order it is decomposed.
+     - if `expr` is a list, and the first value is a str, then the operation is found and it is evaluated with the help of the OPS dictionary that contains all the functions that are called in the traditional way.
       
 3. **Defencing codign**:
       - if `expr` is not an int nor a str nor a list, it raises an error.
@@ -182,20 +182,20 @@ We decide to have a dictionary OPS so the functions can be called dynamically an
 
 ### Breakdown:
 
-1. **Creattion of OPS**: OPS is a dictionary comprehension that loops through the global variables looking for the functions that starts with do_. The keys are the name without the "do_" so it is easier to call in the LGL and the value is the function itself.
+1. **Creation of OPS**: OPS is a dictionary comprehension that loops through the global variables looking for the functions that start with do_. The keys are the name without the "do_" so it is easier to call in the LGL and the value is the function itself.
    
 2. **`do_()` functions**.
-      - These functions take arguments and metada as arguments. Depending on the function first asserts the number of arguments, if different it rasies an error.
+      - These functions take arguments and metadata as arguments. Depending on the function first asserts the number of arguments, if different it raises an error.
         ```python
          def do_multiplication(args, metadata):
               assert len(args) == 2
 
-      - Then separates the left and the rigth value as left and rigth by setting variables inside the `do()_` functions. However it is not set that easily, insead of just setting the variables with the value, it calls the `do()` function with the value, this is the recursive part, as it allows nested expresions and it will just retrun a value when all the operations inside the left or rigth are computed.
+      - Then separate the left and the right values as left and right by setting variables inside the `do()_` functions. However it is not set that easily, instead of just setting the variables with the value, it calls the `do()` function with the value, this is the recursive part, as it allows nested expressions and will just return a value when all the operations inside the left or right are computed.
         ```python
         left = do(args[0], metadata)
         right = do(args[1], metadata)
         
-      - Finally it returns the result of the expresions with the left and the rigth value.
+      - Finally, it returns the result of the expression with the left and the right value.
         ```python
         return left * right
 
@@ -203,26 +203,52 @@ We decide to have a dictionary OPS so the functions can be called dynamically an
 
 ### Breakdown:
 
-A generall view of this function and its helpers is: 
-    - First: tries to turn get a value calling  `evaluate_gets_in_expression()`, which at the same time calls `do_get()`
-    - Second: looks for the operators inside the expression, but if the operator is inside a list (brackets) it ignores it with help of the in-defined function `find_bracket_ranges()`, so the operations are executed in the rigth order. 
-    - Third: if the operator is not inisde brackets, the expression will be divided in three, a rigth part a left part and the operator. The arguments are put in a list and the `solve_expression()` function is called.
-    
-- #### `def evaluate_gets_in_expression()`:
-     - TODO
-- #### `find_bracket_ranges()`:
-     - TODO
-- #### `is_inside_brackets()`:
-     - TODO
+A general view of this function and its helpers are: 
+    - First: tries to turn to get a value calling  `evaluate_gets_in_expression()`, which at the same time calls `do_get()`
+    - Second: looks for the operators inside the expression, but if the operator is inside a list (brackets) it ignores it with the help of the in-defined function `find_bracket_ranges()`, so the operations are executed in the right order. 
+    - Third: if the operator is not inside brackets, the expression will be divided into three, a right part a left part, and the operator. The arguments are put in a list and the `solve_expression()` function is called.
 
+
+- #### `def evaluate_gets_in_expression()`:
+   -    Breakdown: This function scans through a complex expression to identify and replace any instances of `['get', 'variable_name']` with the actual value of that variable. It’s useful for substituting variables within an expression before performing further evaluation. It gets the value by looking at a pattern that includes the word get and if there is one it uses the `do_get` to obtain the value of the variable.
+   -    Parameters: it receives an expression `expr` and the `metadata` dictionary, where the variable will be found.
+   -    Output: It returns a modified version of `expr` with the corresponding value.
+- #### `find_bracket_ranges()`:
+     - Breakdown: This function identifies ranges of characters within an expression that are enclosed in brackets `([])`. It’s designed to locate nested or standalone brackets and return their start and end positions, which is useful for determining if parts of an expression are inside brackets or not. It is inspired by pushdown automata. A "stack" is used to track the positions of opening brackets.
+     - Internal workflow logic: For each character, if it’s an opening bracket ([), its index is pushed onto the stack. If it’s a closing bracket (]), the last opening bracket index is popped from the stack and paired with the current index to form a tuple representing the range of the bracketed section.
+     - Parameters: It receives one parameter `expr`, which is a string representing the expression in which we want to find bracket ranges.
+     - Output: It returns a list of tuples `ranges`, where each tuple contains the start and end indices of a bracketed segment in expr. For example, an output of `[(2, 5), (10, 15)]` means there are two bracketed sections: one from index 2 to 5 and another from 10 to 15.
+- #### `is_inside_brackets()`:
+     - Breakdown: This function checks whether a given index is located within any of the bracketed ranges in an expression.
+     - Parameters:
+         - `index`: An integer representing the position in the expression we want to check.
+         - `ranges`: A list of tuples where each tuple contains the start and end indices of bracketed sections, as returned by `find_bracket_ranges()`.
+      - Output: It returns `True` if `index` is within any of the provided ranges, meaning it’s inside a set of brackets. Otherwise, it returns False.
 
 ### `solve_expression()` and helper functions:
 
 ### Breakdown:
+The `solve_expression()` function is designed to solve arithmetical expressions by applying a specified operator to two arguments. This is particularly useful for handling operations within an expression after the main parts (left, operator, right) have been identified with the `evaluate_expressio()`.
 
-- #### `convert_value()`:
-     - TODO
+   - Convert and Evaluate Arguments: It converts the two arguments (left and right) from a potential string format to their actual values using `convert_value()`. Then, it evaluates each argument by calling `do()` recursively so if the left or right part is rather a list it will be evaluated first and the result would be commutative until it returns a number.
+   - Operator Lookup: It uses a dictionary of operators `OPERATORS`, which maps operation symbols (like +, -, *, etc.) to their corresponding functions from Python’s operator module, it could not be done dynamically since special characters such as '+' cannot be used in functions names.
+   - Operation Execution: Using OPERATORS, it applies the correct operator function to the left and right arguments.
+   - Return Result: It returns the result of the operation if the operator is valid. Otherwise, it raises an error for unsupported operators.
+   - Parameters:
+      - `args`: A list containing two arguments representing the left and right sides of the binary expression that can be either a number, a string, or a list with a string inside.
+      - `operation`: A string indicating the operation to be performed (e.g., '+', '-', '*', etc.).
+      - `metadata`: The dictionary holding the current state, including variables and scopes.
+   - Output:
+It returns an integer after applying `operation` to the evaluated left and right arguments.
    
+   - #### `convert_value()`:
+      - Breakdown: This helper function converts a string value into an integer or a list, depending on its format. It’s useful for handling arguments that may need to be evaluated as numbers or lists.
+      - Parameters:
+         - val: A string representing the value to be converted. It can potentially represent an integer, a string wrapped in a list format, or an actual list in string form.
+      - Output:
+         - Returns an integer if `val` can be converted to one.
+         - Returns a list if `val` represents a single string element within a list or if it’s a list structure that ast.literal_eval can parse. Useful for recursivity as it will be called by `do()`
+         - Raises a ValueError if `val` cannot be interpreted as either an integer or a list.
 ---
 # Tracing in GSC
 
