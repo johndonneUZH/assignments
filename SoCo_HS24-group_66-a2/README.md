@@ -1,4 +1,3 @@
----
 # Lexical Scoping in GSC
 
 This project implements Lexical Scoping using Python to manage function calls, scoping, and metadata handling. Our approach closely follows the lecture structure by creating a dictionary-based structure to pass and track metadata, which we represent through Python classes for added flexibility and organization.
