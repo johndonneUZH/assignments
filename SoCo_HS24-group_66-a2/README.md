@@ -252,23 +252,50 @@ It returns an integer after applying `operation` to the evaluated left and right
 
 # Tracing in GSC
 
-First we check in main() if there is a need for a trace_file. If needed, one is created and a csv header with column names are written. The file path is kept in the metadata. This enables tracing based on depending on the availability of a trace_file.
+The tracing system provides detailed logging of the function calls, their execution flow with corresponding timing. With a decorator, entry and exit points of functions are automatically captured. This provides hierarchy information along with performance metrics.
+-  Command Line Usage: `python lgl_interpreter.py code.gsc --trace trace_file.log`
 
-This project implements a tracing system that when a function is called, it logs the calls and their timing and entry and exit points. It is implemented with Python's decorator, here with "@trace".
+## Main Configuration
 
-### **trace()**
-In the trace function we use a wrapper. If there exists a trace_file, an unique call_id is created. The uniqueness is guaranteed with the funcation secrets.token_hex(3). It records the entry time. with datetime.now(), as to guarantee high-precision timing. The event "start" is logged. Next, the input function is executed. The exit time is recorded and the event "stop" is logged.
+The main function initializes tracing based on command-line arguments. If a trace file is  specified, one is created with corresponding csv headers. The file path is kept in the metadata. This enables tracing based on the availability of a trace file. A csv writer is used for structured output.
+- The tracing system relies on whether there is a trace_file included in the metadata or not. The metadata also stores where the logs are written.
+
+## Trace Decorator
+
+This project implements a tracing system. When a function is called, their  entry and exit points with corresponding timestamps. It is implemented with Python's decorator, here with "@trace". The decorator si applied to the function `do_call()`. 
+
+### `trace()`:
+- Workflow: In the trace decorator we use a wrapper. If there exists a trace_file, an unique call_id is created. The uniqueness is guaranteed with the function secrets.token_hex(3). It records the entry time. with datetime.now(), as to guarantee high-precision timing. The event "start" is logged, with the call ID, function name and timestamp. Next, the input function is executed. The exit time is recorded, and the event "stop" is logged. Again, with the corresponding call ID, function name and timestamp.
+- Parameters: We need to know the function we are tracing, so we can use the wrapper function to log start- and stop-events.
+- Performance: No additional memory use of trace data, as the  data is written immediately. It is also ensured that no data of the log-file is lost, by using mode "a". Furthermore, tracing is skipped if no file is specified in the metadata, to ensure that that no memory and performance time is wasted unnecessary.
+- Error handling: File operations use context managers "with" for proper resource handling. Furthermore, information is added to the log-file with the mode "a" as too preserve all trace data. In addition to this, the function execution is wrapped in a try-finally, as to ensure that the stop-event is logged.
 
 
----
 # Reporting.py
-This file analyzes trace logs generated from the LGL interpreter. It produces a summary report of each function and its' performance.
+This file analyses trace logs generated from the LGL interpreter. It produces a detailed performance report of each function. It processes a csv-formatted trace file and outputs a formatted table displying the statistics.
+   -  Command Line Usage: `python reporting.py <trace_file>`
 
-### **summary_stats()**
-    This function reads the csv trace file from the lgl_interpreter and organzises the data by their function name. A dictionary is initialized. It distincts the different calls through their call ID, matching start and stop events in the trace logs. If the trace file is faulty, a ValueError is raised.
+## `main()`:
+   - The task is solved by breaking it down to three different functions that are called one after each other. By handling the input with different functions, we are able to optimise performance, by only reading through the trace file once in a streaming fashion.
+   - Input validation: With an assertion we ensure that a trace file path is provided.
+   - Error handling: The execution is wrapped in a try-except block, for debugging.
 
-### **calculate_stats()**
-    The function calculate_stats() processes the collected data of summary_stats(). It caluclates the number of calls per function, total execution time in millieseconde and the average exection per call. As to not have duplicates, a list of tuples is returned with the calculated statistics.
+### `summary_stats()`:
+   - Breakdown: This function reads the csv trace file from the lgl_interpreter and organsises the data by their function name. A dictionary is initialized. It differentiates calls through their call ID, matching start and stop events in the trace logs. If the trace file is faulty, a ValueError is raised.
+   - Parameters: Uses the trace_file defined in the metadata of the lgl_interpreter.
+   - Data Structure: A nested defaultdict is used to store the function call data. This also optimises the dictionary access for further use.
+   - Workflow: Reads the data written in the trace_file, skipping the header. It reads each event line by line, recording the start and end time for each unique call, identifying it by the ID. It does that by creating a new call entry for each start-event. 
+   - Error handling: A ValueError is raised if there is a stop-event for a specific call ID, but no start-event beforehand. Furthermore, we use `with open(...)` for a proper file handling.
+   - Output: Returns a dictionary with each function called, their id, start and end time
 
-### **display()**
-    This function displays the statistics that were caluclated in calculate_stats. THe output is fomatted with the use of PrettyTable.
+### `calculate_stats()`:
+   - Breakdown: The function calculate_stats() processes the collected data of summary_stats(). It calculates the number of calls per function, total execution time in milliseconds and the average execution per call. As to not have duplicates, a list of tuples is returned with the calculated statistics.
+   - Parameters: This function uses the dictionary created by summary_stats().
+   - Workflow: First we create a list where the needed output will be stored. For each function, it sets the count of calls and the needed time for their execution to zero. If there is an end time to the function, the duration of the execution is calculated. For that, the timestamps are converted to datetime objects. The use `datetime.strptime()` is crucial to be able to calculate the execution time in microsecond precision. The counters will then be updated. For each function in the log file, that has ended, that stats are created and updated to the list.
+   - Output: A list of tuples with the statistics of the number of calls, their total time and average time per function used. The different time outputs are formatted to 3 decimal points.
+
+### `display_stats()`:
+   - Breakdown: This function displays the statistics that were calculated in calculate_stats. The output is formatted with the use of PrettyTable.
+   - Parameters: This function utilizes the list created in the calculate_stats() function.
+   - Workflow: Using the PrettyTable function from the prettytable library, we format a table. The statistics for each function are added, each with its' own row. 
+   - Output: This function outputs a table of the statistics from the functions called. The different columns are: function name, number of calls, total time of all executions in ms and the average time of each function also in ms.
