@@ -1,7 +1,6 @@
-import sys, json, re, ast, operator, pprint, random, csv
-from functools import wraps
+import argparse, json, re, ast, operator, csv
 from datetime import datetime
-from time import time
+import secrets
 
 ##############################################
 ################## SCOPES ####################
@@ -43,7 +42,37 @@ class Scope:
 
     def __str__(self):
         return str(self.locals)
-    
+
+##############################################
+############### DECORATOR ####################
+##############################################
+
+def trace(func):
+    def wrapper(args, metadata):
+        func_name = args[0]  # Get the specific function name from arguments
+
+        # If trace file is provided, write the function call event to the file
+        if metadata['trace_file']:
+            call_id = secrets.token_hex(3) # Generate a unique call ID for each function call
+            start_time = datetime.now() # Get the current timestamp
+            # Write the function call event to the trace file
+            with open(metadata['trace_file'], mode="a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([call_id, start_time, func_name, "start"])
+
+        # Call the function and get the result
+        result = func(args, metadata)
+
+        if metadata['trace_file']:
+            end_time = datetime.now() # Get the current timestamp
+            with open(metadata['trace_file'], mode="a", newline="") as f:
+                writer = csv.writer(f)
+                writer.writerow([call_id, end_time, func_name, "stop"])
+        # Return the result of the function call
+        return result
+    # Return the wrapper function
+    return wrapper
+
 ##############################################
 ############# UTILITY FUNCTIONS ##############
 ##############################################
@@ -54,31 +83,38 @@ def do_set(args, metadata):
 
     keyword, value = args
 
+    # Check if the value is a function definition
     if isinstance(value, list) and value[0] == 'function':
         params = value[1]
         if isinstance(params, str):
             params = [params]
         body = value[2]
 
+        # If we're already inside a function, create a nested function
         if metadata['in_function']:
             parent_func = metadata['in_function']
             child_func = createFunctionObject(params, body, metadata['functions'][parent_func]['scope'])
+        # Otherwise, create a global function
         else:
             child_func = createFunctionObject(params, body)
 
+        # Store the function in the metadata
         metadata['functions'][keyword] = child_func
         return metadata['functions'][keyword]
 
+    # Evaluate the value if it's an expression
     value = do(value, metadata)
+    
     # If inside a function, set the variable in the function's scope
     if metadata['in_function']:
         func_name = metadata['in_function']
         metadata['functions'][func_name]['scope'].set(keyword, value)
+    # Else we set the variable in the global scope
     else:
-        # Set the variable in the global scope
         metadata['globals'].set(keyword, value)
     return value
 
+@trace
 def do_call(args, metadata):
     assert len(args) >= 1, "Expected at least one argument"
     assert isinstance(args[0], str), "First argument must be the function name"
@@ -108,30 +144,16 @@ def do_call(args, metadata):
     original_scope = func_data['scope']
     func_data['scope'] = call_scope
 
+    # If the function is called from another function, update the caller function name
     caller_func = None
     if metadata['in_function'] != func_name:
         caller_func = metadata['in_function']
 
-    if metadata['trace_file']: #if there is tracing
-        call_id = random.randint(100000, 999999) #random id for function call
-        start_time = datetime.now()#so reporting.py has exact numbers to calculate
-        with open(metadata['trace_file'], mode="a", newline = "") as f:
-            writer = csv.writer(f)
-            writer.writerow([call_id, start_time, func_name, "start"])
+    enter_function(func_name, metadata) # Enter the function
+    result = do(body, metadata) # Execute the function body
+    exit_function(metadata) # Exit the function
 
-    
-
-    enter_function(func_name, metadata)
-    result = do(body, metadata)
-    exit_function(metadata)
-
-    if metadata['trace_file']: #finish the tracing when executed
-        end_time = datetime.now()
-        with open(metadata['trace_file'], mode="a", newline = "") as f:
-            writer = csv.writer(f)
-            writer.writerow([call_id, end_time, func_name, "stop"])
-
-    if caller_func:
+    if caller_func: # Restore the caller function name in metadata
         metadata['in_function'] = caller_func
 
     # Restore the original scope after execution
@@ -151,7 +173,7 @@ def do_get(args, metadata):
             return active_scope.get(keyword)
         except NameError:
             pass
-
+    
     return metadata['globals'].get(keyword)
 
 def do(expr, metadata):
@@ -162,6 +184,7 @@ def do(expr, metadata):
         return evaluate_expression(expr, metadata)
 
     assert isinstance(expr, list), f"Expected expr to be a list, got {type(expr)}: {expr}"
+
 
     if len(expr) == 1 and isinstance(expr[0], str):
         return evaluate_expression(expr[0], metadata)
@@ -185,20 +208,33 @@ def createFunctionObject(params, body, parent=None):
 
 def enter_function(func_name, metadata):
     metadata['in_function'] = func_name
-
+ 
 def exit_function(metadata):
     metadata['in_function'] = None
+
+def evaluate_gets_in_expression(expr, metadata):
+    pattern = re.compile(r'\[\s*\'get\'\s*,\s*\'([^\']+)\'\s*\]')
+    while True:
+        match = pattern.search(expr)
+        if not match:
+            break
+        var_name = match.group(1)
+        value = do_get([var_name], metadata)
+        # Replace the 'get' expression with its value in the expression
+        expr = expr[:match.start()] + str(value) + expr[match.end():]
+    return expr
+
 
 def convert_value(val):
     try:
         return int(val) # First, try to convert the value to an integer
     except ValueError:
-        try:
+        try:            
             inner = val.strip()[1:-1].strip()
-            if inner.startswith("'") and inner.endswith("'"):
-                inner_str = inner[1:-1]
+            if inner.startswith("'") and inner.endswith("'"): # Checks if the string is inside a list and turns into a string so can be further analyzed
+                inner_str = inner[1:-1] 
                 result = [inner_str]
-                return result #Tries to see if it is a list inside a string and turns into a list so can be further analyzed
+                return result # Tries to see if it is a list inside a string and turns into a list so can be further analyzed
             else: # Checks if the list is already in list format.
                 try:
                     result = ast.literal_eval(val)
@@ -211,11 +247,13 @@ def convert_value(val):
         except (ValueError, SyntaxError):
             raise ValueError(f"'{val}' is neither a number nor a list.")
 
+
 def solve_expression(args, operation, metadata):
     assert len(args) == 2, f"Expected two arguments, got {len(args)}"
-    left = do(convert_value(args[0]), metadata)     # Convert the arguments to values (numbers or nested expressions)
+    left = do(convert_value(args[0]), metadata) # Convert the arguments to values (numbers or nested expressions)
     right = do(convert_value(args[1]), metadata)
-    #We do it this way to avoid using eval() and avoiding else if statements
+
+    # We do it this way to avoid using eval() and avoiding else if statements
     OPERATORS = {
         '+': operator.add,
         '-': operator.sub,
@@ -226,13 +264,16 @@ def solve_expression(args, operation, metadata):
         'xor': operator.xor,
     }
     op_func = OPERATORS.get(operation.lower())
+    # Check if the operator is supported
     if op_func is None:
         raise ValueError(f"Unsupported operator: {operation}")
     return op_func(left, right)
 
 def evaluate_expression(expr, metadata):
+    expr = evaluate_gets_in_expression(expr, metadata)
+    
     def find_bracket_ranges(expr): # Function to find nested [] if they are in the left side of the operator.
-        stack = []
+        stack = []  
         ranges = []
         for i, char in enumerate(expr):
             if char == '[':
@@ -241,7 +282,7 @@ def evaluate_expression(expr, metadata):
                 start = stack.pop()
                 ranges.append((start, i))
         return ranges
-    # Función para comprobar si un índice está dentro de algún rango de corchetes
+
     def is_inside_brackets(index, ranges):
         for start, end in ranges:
             if start < index < end:
@@ -249,22 +290,22 @@ def evaluate_expression(expr, metadata):
         return False
     
     bracket_ranges = find_bracket_ranges(expr) # Return the indixes of the [] to check if the operator is inside or if it is okey to do the funciton.
-
     pattern = re.compile(r'([+\-*/]|and|or|xor)', re.IGNORECASE) # look for operators.
 
     for match in pattern.finditer(expr): # Look for operators outside the []
-        op = match.group(0)
-        index = match.start()
+        op = match.group(0) # Get the operator
+        index = match.start() # Get the index of the operator
         if not is_inside_brackets(index, bracket_ranges): # Cheecks that the operator is outside the []
             left = expr[:index].strip()
             right = expr[index + len(op):].strip()
             args = [left, right]
             return solve_expression(args, op, metadata)
 
+
 ##############################################
 ############## OPERATIONS ####################
 ##############################################
-  
+
 def do_sequence(args, metadata):
     assert len(args) > 0
     result = None
@@ -339,35 +380,41 @@ OPS = {
 ##############################################
 
 def main():
-    assert len(sys.argv) == 2 or len(sys.argv) == 4  # Usage: python lgl_interpreter.py code.gsc
-                                                    # Usage: python lgl_interpreter.py code.gsc --trace trace_file.log
-    
-    trace_file = None #No trace file by default
-    if len(sys.argv) > 2 and sys.argv[2] == "--trace":
-        if len(sys.argv) != 4:
-            raise ValueError("file path not correctly provided")
-        trace_file = sys.argv[3]
+    # Parse command-line arguments
+    parser = argparse.ArgumentParser(
+        description='Process a code file and an optional trace log file.',
+        epilog='Example usage: python lgl_interpreter.py code.gsc --trace trace_file.log',
+        usage='lgl_interpreter.py code_file [-h] [--trace TRACE_FILE]'
+    )
+    parser.add_argument('code_file', help='Path to the code file (e.g., code.gsc)')
+    parser.add_argument(
+        '--trace', dest='trace_file', help='Path to the optional trace log file (e.g., trace_file.log)'
+    )
 
-        with open(trace_file, mode = 'w', newline = '') as f: #initialize trace file
+    args = parser.parse_args()
+    
+    # Check if the trace file is provided
+    trace_file = args.trace_file
+    if trace_file:
+        with open(trace_file, mode='w', newline='') as f:
             writer = csv.writer(f)
             writer.writerow(['id', 'timestamp', 'function_name', 'event'])
-
-
-    with open(sys.argv[1]) as source:
+    
+    with open(args.code_file) as source:
         program = json.load(source)
-
+    
+    # Initialize metadata
     metadata = {
         'in_function': None,
         'globals': GLOBAL_SCOPE,
         'functions': {},
-        'trace_file': trace_file 
+        'trace_file': trace_file
     }
 
     print('BUILT-IN FUNCTIONS | ' + ', '.join(OPS.keys()))
     result = do(program, metadata)
     print('USER-DEFINED FUNCTIONS | ' + ', '.join(metadata['functions'].keys()))
     print('RESULT |', result)
-
 
 if __name__ == "__main__":
     main()

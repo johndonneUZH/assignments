@@ -1,68 +1,83 @@
 import csv, sys
 from datetime import datetime
-from time import perf_counter
-
+from prettytable import PrettyTable
+from collections import defaultdict
 
 def summary_stats(trace_file):
-    summary_calls = {}
-    with open(trace_file, mode = "r", newline ="") as f:
+    # Create a dictionary to store call logs for each function
+    # The dictionary will have function names as keys and a dictionary of call logs as values
+    # Each call log will have call ID as key and a dictionary of start and end times as values
+    # Example: {"foo": {
+    #               "b59bb6": {
+    #                       "start_time": "2021-09-01 12:00:00.000", 
+    #                       "end_time": "2021-09-01 12:00:01.000"
+    #                       }
+    #               },
+    #               "93f243": {
+    #                       "start_time": "2021-09-01 12:00:00.000", 
+    #                       "end_time": "2021-09-01 12:00:01.000"
+    #                       }
+    #               }
+    #          }
+    summary_calls = defaultdict(dict)
+
+    with open(trace_file, newline="") as f:
         reader = csv.reader(f)
-        next(reader) #skip header
+        next(reader) # Skip the header row
         for row in reader:
             call_id, timestamp, func_name, event_type = row
 
-            if func_name not in summary_calls:
-                summary_calls[func_name] = []
-            
+            # Handle "start" events by storing start time for each call_id
             if event_type == "start":
-                summary_calls[func_name].append({"id": call_id, "start_time": perf_counter(), "end_time":None})
+                summary_calls[func_name][call_id] = {"start_time": timestamp, "end_time": None}
+
+            # Handle "stop" events by updating end time for each call_id
             elif event_type == "stop":
-                 for call in summary_calls[func_name]: 
-                    if call["id"] == call_id and call["end_time"] is None:
-                        call["end_time"] = perf_counter()
-                        break #only one end per id
+                if call_id not in summary_calls[func_name]:
+                    raise ValueError(f"Start event not found for call ID {call_id} of function {func_name}")
+                summary_calls[func_name][call_id]["end_time"] = timestamp
+
     return summary_calls
 
 def calculate_stats(calls):
-    stats = {}
-    for func_name, entries in calls.items():
-        total_time = 0.0
+    stats = []
+    for func_name, logs in calls.items():
+        total_time = 0
         num_calls = 0
 
-        for entry in entries:
-            if entry["end_time"] is not None:
+        for log in logs.values():  # Iterate over each call log entry
+            if log["end_time"] is not None:
+                datetime_format = "%Y-%m-%d %H:%M:%S.%f"
+                start_time = datetime.strptime(log["start_time"], datetime_format)
+                end_time = datetime.strptime(log["end_time"], datetime_format)
                 
-                total_time += (entry["end_time"] - entry["start_time"])*1000.0  #display in ms
+                # Calculate time difference in milliseconds
+                time_diff_ms = (end_time - start_time).total_seconds() * 1000
+                total_time += time_diff_ms
                 num_calls += 1
 
         if num_calls > 0:
-            avrg_time = float(total_time /num_calls)
-            stats[func_name] =[func_name, num_calls, total_time, avrg_time]
+            avrg_time = total_time / num_calls  # Average time in milliseconds
+            stats.append((func_name, num_calls, f'{total_time:.3f}', f'{avrg_time:.3f}'))
 
-    return list(stats.values()) #so duplicates are eliminated
+    return stats
 
 def display_stats(stats):
-    print("\n| Function Name | Num. of calls | Total Time (ms) | Average Time (ms)|")
-    print("|--------------------------------------------------------------------|")
+    table = PrettyTable(["Function Name", "Num. of calls", "Total Time (ms)", "Average Time (ms)"])
     for stat in stats:
-        print(f"|{stat[0]:<15}|{stat[1]:<15}|{stat[2]:<17.3f}|{stat[3]:<18.3f}|")
+        table.add_row(stat)
+    print(table)
 
 def main():
-    if len(sys.argv) != 2:  #Usage: python reporting.py <trace_file>
-        print("Arguments are wrong")
-        sys.exit(1)     #prevents running code faultly
-
+    assert len(sys.argv) == 2, "Usage: python reporting.py <trace_file>"
     try:
         trace_file = sys.argv[1]
         calls = summary_stats(trace_file)
         stats = calculate_stats(calls)
         display_stats(stats)
-    except FileNotFoundError:   #if file is not found
-        print("Error: Trace file not found")
-        sys.exit(1)     
+    
     except Exception as e:
-        print("Error occurred")
-        sys.exit(1)     #if something else happens
+        raise e
 
 if __name__ == "__main__":
     main()
