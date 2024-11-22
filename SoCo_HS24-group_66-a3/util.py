@@ -1,5 +1,5 @@
 from pathlib import Path
-import os, shutil
+import os, shutil, time
 from hashlib import sha256
 
 def hash_all(repo_path):
@@ -212,3 +212,72 @@ def display_status(staged_files_dict, modified_files, not_modified_dict, remaini
         for name in remaining_untracked:
             print(f"\t\t\033[91m{name}\033[0m")
         print("")
+
+def delete_branch(repo_path: Path, branch_name: str):
+    branch_path = repo_path / ".tig" / branch_name
+    if branch_path.exists():
+        shutil.rmtree(branch_path)
+        print(f"Deleted branch \33[92m{branch_name}\33[0m")
+    else:
+        print(f"Branch \33[91m{branch_name}\33[0m does not exist")
+
+def merge_files(branch_backup_path, main_backup_path, manifest):
+    branch_backup_path = Path(branch_backup_path)
+    main_backup_path = Path(main_backup_path)
+
+    for file_name, hash_code in manifest:
+        source_path = branch_backup_path / hash_code
+        target_path = main_backup_path / hash_code
+
+        if not source_path.exists():
+            print(f"Warning: File {source_path} does not exist in the branch backup.")
+            continue
+
+        # Copy if the file does not already exist in the target backup path
+        if not target_path.exists():
+            shutil.copy(source_path, target_path)
+
+def current_time():
+    """Return the current time as a Unix timestamp string."""
+    return str(int(time.time()))
+
+def write_manifest(manifests_path, timestamp, manifest, message):
+    """Write the manifest of a commit to a file."""
+    manifests_path = Path(manifests_path)
+    manifests_path.mkdir(parents=True, exist_ok=True)
+    manifest_file = manifests_path / f"{timestamp}.csv"
+
+    with open(manifest_file, "w") as f:
+        f.write("filename,hash,message\n")
+        for filename, hash_code in manifest:
+            f.write(f"{filename},{hash_code},{message}\n")
+
+def copy_files(staged_path, backup_path, manifest):
+    """
+    Copy files from the staging area to the backup directory.
+    Also, ensure every file in the manifest is backed up.
+    """
+    backup_path = Path(backup_path)
+    staged_path = Path(staged_path)
+    repo_info = get_repo_info(find_repo_root())
+    committed_files_path = repo_info["committed_files"]
+
+    backup_path.mkdir(parents=True, exist_ok=True)
+
+    # Ensure all files in the manifest are backed up
+    for file_name, file_hash in manifest:
+        source_path = Path(file_name).resolve()
+        dest_path = backup_path / file_hash
+
+        if not source_path.exists():
+            raise FileNotFoundError(f"Error: {source_path} not found")
+
+        if not dest_path.exists():  # Avoid redundant copies
+            shutil.copy(source_path, dest_path)
+
+    # Update the committed files tracking file
+    committed_content = [f"{file},{hash_}\n" for file, hash_ in manifest]
+    write_file(committed_files_path, committed_content, mode="w")
+
+    # Clear the staging area
+    staged_path.write_text("")
