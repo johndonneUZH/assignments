@@ -1,146 +1,256 @@
-import argparse, sys, os, time, shutil, re
+import argparse, sys, time, difflib
 from glob import glob
 from pathlib import Path
-from hashlib import sha256
-import difflib
-from util import hash_all, hash_file, clear_directory, create_file, read_file_lines, write_file, clear_file, parse_manifest, parse_files, find_repo_root, get_repo_info, change_head, get_head,  copy_commit_data, create_branch, initialize_branch_files, display_status
+from datetime import datetime
+from util import *
 from colorama import Fore, Style
 
 ############################################
 ################# INIT #####################
 ############################################
+
 def _init(repository: str):
     # Define the repository path
-    repository_path = Path(repository)
+    repo_path = Path(repository)
 
     # Initialize the repository directory
-    if not repository_path.exists():
-        repository_path.mkdir()
+    if not repo_path.exists():
+        repo_path.mkdir()
 
-    # Hash and store untracked files
-    hashed_files = hash_all(repository_path)
-
-    # Define metadata path
-    metadata = ".tig"
-    metadata_path = repository_path / metadata
+    # Initialize the metadata directory
+    metadata_path = repo_path / ".tig"
+    if metadata_path.exists():
+        clear_directory(metadata_path)
     metadata_path.mkdir(parents=True, exist_ok=True)
 
-    # Create main branch directory
-    main = metadata_path / "main"
-    main.mkdir(parents=True, exist_ok=True)
+    # Hash all untracked files in the repository
+    hashed_files = hash_all(repo_path)
 
-    # Create untracked files tracking file and write the hashed files
-    untracked_files_path = main / "untracked_files.txt"
-    with open(untracked_files_path, "w") as f:
-        for name, hash_code in hashed_files:
-            if str(name).startswith(metadata): # Skip .tig files
-                continue
-            f.write(f"{name},{hash_code}\n")
+    # Create the main branch with the hashed files
+    create_branch(repo_path, hashed_files)
 
-    # Create staging, modified, and commits tracking files
-    for file_name in ["staged_files.txt", "modified_files.txt", "commits.txt"]:
-        create_file(main / file_name)
-
-    # Create HEAD file and set the default branch
-    # This way we can keep track of the current branch
-    with open(metadata_path / "HEAD", "w") as f:
-        f.write("main")
-
-    print(f"Initialized a new \033[92mtig\033[0m repository at {repository_path}")
+    print(f"Initialized a new \033[92mtig\033[0m repository at {repo_path}")
 
 ############################################
 ################# ADD ######################
 ############################################
+
 def _add(filename):
-    dot_tig = find_repo_root() / ".tig"
-    head = read_file_lines(dot_tig / "HEAD")[0].strip()
-    branch_path = dot_tig / head
-    untracked_path = branch_path / "untracked_files.txt"
-    staged_path = branch_path / "staged_files.txt"
-     
+    repo_info = get_repo_info(find_repo_root())
+    staged_path = repo_info["staged_files"]
+    untracked_path = repo_info["untracked_files"]
+    modified_path = repo_info["modified_files"]
+
+    def stage_files_from(path):
+        files = parse_files(read_file_lines(path))
+        for file in files:
+            _add(file)  # Recursively add files
+        # Clear the file list after staging
+        write_file(path, [])
+
     if filename == '.':
-        untracked_files = read_file_lines(untracked_path)
-        for line in untracked_files:
-            file, _ = line.split(',')
-            _add(file)
-        clear_file(untracked_path)
+        # Stage all untracked and modified files
+        stage_files_from(untracked_path)
+        stage_files_from(modified_path)
         return
 
-    file_path = Path(filename)
+    file_path = Path(filename).resolve()  # Normalize the path
     if not file_path.exists():
-        raise FileNotFoundError(f"File {filename} not found")
+        raise FileNotFoundError(f"Error: File {filename} not found")
 
-    untracked_files = read_file_lines(untracked_path)
-    remaining_untracked = []
-    for line in untracked_files:
-        file_code, _ = line.split(',')
-        if Path(file_code.strip()) == file_path:
-            write_file(staged_path, [line], mode="a")
+    # Hash the current file
+    current_hash = hash_file(file_path)
+
+    # Load current staged, modified, and untracked files
+    staged_files = parse_files(read_file_lines(staged_path))
+    modified_files = parse_files(read_file_lines(modified_path))
+    untracked_files = parse_files(read_file_lines(untracked_path))
+
+    # Ensure minimal file names are stored/displayed
+    relative_file_path = str(file_path.relative_to(find_repo_root()))
+
+    # Handle files already in the staging area
+    if relative_file_path in staged_files:
+        if staged_files[relative_file_path] != current_hash:
+            # File is staged but with a different hash; override it
+            staged_files[relative_file_path] = current_hash
+        # If the hash matches, do nothing (already staged with same content)
         else:
-            remaining_untracked.append(line)
-    write_file(untracked_path, remaining_untracked)
+            return
+
+    # Handle modified files
+    if relative_file_path in modified_files:
+        # Remove from modified if explicitly added to stage
+        del modified_files[relative_file_path]
+
+    # Handle untracked files
+    if relative_file_path in untracked_files:
+        # Remove from untracked if explicitly added to stage
+        del untracked_files[relative_file_path]
+
+    # Stage the file
+    staged_files[relative_file_path] = current_hash
+
+    # Write updated states to disk
+    write_file(staged_path, [f"{file},{hash_}\n" for file, hash_ in staged_files.items()])
+    write_file(untracked_path, [f"{file},{hash_}\n" for file, hash_ in untracked_files.items()])
+    write_file(modified_path, [f"{file},{hash_}\n" for file, hash_ in modified_files.items()])
+
 
 ############################################
 ################# COMMIT ###################
 ############################################
+
+def current_time():
+    """Return the current time as a Unix timestamp string."""
+    return str(int(time.time()))
+
+def write_manifest(manifests_path, timestamp, manifest, message):
+    """Write the manifest of a commit to a file."""
+    manifests_path = Path(manifests_path)
+    manifests_path.mkdir(parents=True, exist_ok=True)
+    manifest_file = manifests_path / f"{timestamp}.csv"
+
+    with open(manifest_file, "w") as f:
+        f.write("filename,hash,message\n")
+        for filename, hash_code in manifest:
+            f.write(f"{filename},{hash_code},{message}\n")
+
+def copy_files(staged_path, backup_path, manifest):
+    """
+    Copy files from the staging area to the backup directory.
+    Also, ensure every file in the manifest is backed up.
+    """
+    backup_path = Path(backup_path)
+    staged_path = Path(staged_path)
+    repo_info = get_repo_info(find_repo_root())
+    committed_files_path = repo_info["committed_files"]
+
+    backup_path.mkdir(parents=True, exist_ok=True)
+
+    # Ensure all files in the manifest are backed up
+    for file_name, file_hash in manifest:
+        source_path = Path(file_name).resolve()
+        dest_path = backup_path / file_hash
+
+        if not source_path.exists():
+            raise FileNotFoundError(f"Error: {source_path} not found")
+
+        if not dest_path.exists():  # Avoid redundant copies
+            shutil.copy(source_path, dest_path)
+
+    # Update the committed files tracking file
+    committed_content = [f"{file},{hash_}\n" for file, hash_ in manifest]
+    write_file(committed_files_path, committed_content, mode="w")
+
+    # Clear the staging area
+    staged_path.write_text("")
+
 def _commit(message):
-    print("Committing with message:", message)
+    """
+    Create a new commit by taking a complete snapshot of the repository.
+    """
+    # Define paths to tracking files and directories
+    repo_path = find_repo_root()
+    repo_info = get_repo_info(repo_path)
+    head = repo_info["head"]
+    staged_path = repo_info["staged_files"]
+    manifests_path = repo_info["manifests"]
+    backup_path = repo_info["backup"]
+
+    if not read_file_lines(staged_path):
+        print("Staging Area Empty: No changes to commit")
+        return
+     
+    # Hash all files in the repository for a full snapshot
+    manifest = hash_all(repo_path)
+    timestamp = current_time()  # Unix timestamp
+
+    # Write the commit metadata to the manifest
+    write_manifest(manifests_path, timestamp, manifest, message)
+
+    # Copy the staged files to the backup directory
+    copy_files(staged_path, backup_path, manifest)
+
+    # Update the HEAD to point to the new commit
+    change_head(head, timestamp)
+    return manifest
 
 ############################################
 ################# STATUS ###################
 ############################################
 
 def _status():
-    repo_root = find_repo_root() # Find the repository root
-    dot_tig = repo_root / ".tig" # Define the .tig directory
-    head = get_head(dot_tig)
-    branch_path = dot_tig / head
+    repo_root = find_repo_root()
+    repo_info = get_repo_info(repo_root)
+    head = repo_info["head"]
+    staged_path = repo_info["staged_files"]
+    modified_path = repo_info["modified_files"]
+    untracked_path = repo_info["untracked_files"]
+    committed_path = repo_info["committed_files"]
 
-    # Define the paths to the tracking files
-    untracked_path = branch_path / "untracked_files.txt"
-    staged_path = branch_path / "staged_files.txt"
-    modified_path = branch_path / "modified_files.txt"
-
-    # Read the contents of the tracking files
-    untracked_files = read_file_lines(untracked_path)
-    staged_files = read_file_lines(staged_path)
-    
     # Parse existing data
-    untracked_files_dict = {line.split(',')[0]: line.split(',')[1].strip() for line in untracked_files}
-    staged_files_dict = {line.split(',')[0]: line.split(',')[1].strip() for line in staged_files}
-    
+    staged_files = parse_files(read_file_lines(staged_path))
+    committed_files = parse_files(read_file_lines(committed_path))
+    untracked_files = set(parse_files(read_file_lines(untracked_path)).keys())
+    modified_files = parse_files(read_file_lines(modified_path))
+
     # Current file hashes in the repo
     hashed_files = dict(hash_all(repo_root))
 
-    # Set up the lists to store the modified and untracked files
-    modified_files = []
-    remaining_untracked = []
+    # Collect updates for modified files
+    updated_modified = {}
+    files_to_remove_from_staged = []
+    files_to_remove_from_committed = []
 
-    # Check staged files for modifications
-    for name, staged_hash in staged_files_dict.items():
-        current_hash = hashed_files.get(name)
-        if current_hash and current_hash != staged_hash:  # File is modified
-            modified_files.append(name)
+    # Check staged files
+    for file, staged_hash in staged_files.items():
+        current_hash = hashed_files.get(file)
+        if current_hash and current_hash != staged_hash:
+            updated_modified[file] = current_hash
+            files_to_remove_from_staged.append(file)
+
+    for file in files_to_remove_from_staged:
+        del staged_files[file]
+
+    # Check committed files
+    for file, committed_hash in committed_files.items():
+        current_hash = hashed_files.get(file)
+        if current_hash and current_hash != committed_hash:
+            updated_modified[file] = current_hash
+            files_to_remove_from_committed.append(file)
+
+    for file in files_to_remove_from_committed:
+        del committed_files[file]
+
+    # Combine existing and updated modified files
+    modified_files.update(updated_modified)
+
+    # Identify untracked files
+    tracked_files = set(staged_files.keys()) | set(committed_files.keys()) | set(modified_files.keys())
+    new_untracked = {
+        file for file in hashed_files.keys()
+        if file not in tracked_files and not file.startswith(".tig")
+    }
+    untracked_files.update(new_untracked)
+
+    # Remove files that are now tracked from untracked
+    untracked_files -= set(tracked_files)
+
+    # Write updated states to disk
+    write_file(staged_path, [f"{file},{hash_}\n" for file, hash_ in staged_files.items()])
+    write_file(modified_path, [f"{file},{hash_}\n" for file, hash_ in modified_files.items()])
+    write_file(untracked_path, [f"{file},{hashed_files[file]}\n" for file in untracked_files])
+    write_file(committed_path, [f"{file},{hash_}\n" for file, hash_ in committed_files.items()])
     
-    # Check untracked files
-    for name, untracked_hash in untracked_files_dict.items():
-        current_hash = hashed_files.get(name)
-        if current_hash is None:  # Untracked file deleted
-            continue
-        elif current_hash != untracked_hash:  # Untracked file modified
-            modified_files.append(name)
-        else:  # File is still untracked and unchanged
-            remaining_untracked.append(name)
-
-    # Identify newly untracked files
-    for name, current_hash in hashed_files.items():
-        if name not in staged_files_dict and name not in untracked_files_dict:
-            remaining_untracked.append(name)
-
-    write_file(untracked_path, [f"{name},{hashed_files[name]}\n" for name in remaining_untracked])
-    write_file(modified_path, [f"{name},{hashed_files[name]}\n" for name in modified_files])
-
-    display_status(staged_files_dict, modified_files, remaining_untracked, head)
+    # Display the status
+    display_status(
+        staged_files,
+        list(modified_files.keys()),  # Only modified files
+        list(committed_files.keys()),
+        list(untracked_files),
+        head
+    )
 
 """  GIT STATUS INTERFACE:
 On branch main
@@ -162,14 +272,128 @@ Untracked files:
 ############################################
 ################## LOG #####################
 ############################################
+
+# Convert Unix timestamp to human-readable format
+def unix_to_human_readable(unix_timestamp):
+    unix_timestamp = int(unix_timestamp)
+    return datetime.fromtimestamp(unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
+
 def _log():
-    print("Showing the commit history")
+    repo_info = get_repo_info(find_repo_root())
+    head = repo_info["head"]
+    head_hash = repo_info["head_hash"]
+    manifests_path = repo_info["manifests"]
+
+    commits = os.listdir(manifests_path)
+
+    if not commits:
+        print(f"\n\033[94mCommit history for branch {head} is empty.\033[0m\n")
+        return
+    print(f"\n\033[94mCommit history for branch {head}:\033[0m\n")
+
+    commits.sort() # Sort commits by date
+
+    for commit in commits:
+        commit_hash = commit.replace('.csv', '')
+        if commit_hash == head_hash:
+            print(f"\033[93mcommit {commit.replace('.csv', '')} (HEAD -> {head})\033[0m")
+        else:
+            print(f"\033[93mcommit {commit.replace('.csv', '')}\033[0m")
+                
+        with open(manifests_path / commit) as f:
+            lines = f.readlines()
+            lines.pop(0)  # Skip the header line
+            print(f"Date: {unix_to_human_readable(commit.replace('.csv', ''))}")
+            file_name, hash_code, message = lines[0].strip().split(',')
+
+            print(f"Message: \033[92m{message}\033[0m")
+        print()
 
 ############################################
 ################# CHECKOUT #################
 ############################################
-def _checkout(commit_id):
-    print("Checking out commit", commit_id)
+
+def _checkout(commit_hash):
+    repo_root = find_repo_root()
+    repo_info = get_repo_info(repo_root)
+    head = repo_info["head"]
+    head_hash = repo_info["head_hash"]
+    manifests_path = repo_info["manifests"]
+    backup_path = repo_info["backup"]
+    staged_files_path = repo_info["staged_files"]
+    modified_files_path = repo_info["modified_files"]
+    committed_files_path = repo_info["committed_files"]
+
+    # Check for staged or modified files
+    staged_files = read_file_lines(staged_files_path)
+    modified_files = read_file_lines(modified_files_path)
+
+    if staged_files or modified_files:
+        print("Error: There are staged or modified files. Please commit or discard changes before checking out a commit.")
+        return
+
+    # Find the target commit
+    commits = os.listdir(manifests_path)
+    if not commits:
+        print(f"Error: No commits found in branch {head}")
+        return
+
+    manifest = None
+    for commit in commits:
+        if commit.startswith(commit_hash):
+            manifest = read_file_lines(manifests_path / commit)
+            manifest.pop(0)  # Skip the header line
+            break
+
+    if not manifest:
+        print(f"Error: Commit {commit_hash} not found in branch {head}")
+        return
+
+    # Parse the manifest
+    commit = {line.split(",")[0]: line.split(",")[1] for line in manifest}
+
+    # Get existing files in the repository
+    existing_files = {}
+    for root, _, files in os.walk(repo_root):
+        for file in files:
+            file_path = Path(root) / file
+            if ".tig" not in str(file_path):  # Skip .tig directory
+                relative_path = file_path.relative_to(repo_root)
+                existing_files[str(relative_path)] = file_path
+
+    # Delete files not in the manifest
+    for file in existing_files:
+        if file not in commit:
+            existing_files[file].unlink()  # Delete the file
+
+    # Restore files from the manifest
+    for file_name, hash_code in commit.items():
+        source_path = backup_path / hash_code
+        target_path = repo_root / file_name
+
+        if not source_path.exists():
+            print(f"Error: File {source_path} referenced in the manifest does not exist.")
+            continue
+
+        # Create target directory if it doesn't exist
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Copy the file if it doesn't exist or has changed
+        if not target_path.exists() or not source_path.read_bytes() == target_path.read_bytes():
+            shutil.copy(source_path, target_path)
+
+    # Clear staged and modified files
+    write_file(staged_files_path, [])
+    write_file(modified_files_path, [])
+
+    # Update committed files to reflect the current commit
+    committed_files = [f"{file_name},{hash_code}\n" for file_name, hash_code in commit.items()]
+    write_file(committed_files_path, committed_files)
+
+    # Update the HEAD to the new commit
+    change_head(head, commit_hash)
+
+    print(f"Branch \33[92m{head}\33[0m is now at commit \33[93m{commit_hash}\33[0m")
 
 ############################################
 ################### RESET ##################
@@ -271,6 +495,7 @@ def _reset(commit_id, mode="--hard"):
 ############################################
 ################### DIFF ###################
 ############################################
+
 def _diff(filename):
     print(f"Showing differences for: {filename}")
     
@@ -349,24 +574,45 @@ def _diff(filename):
 
 def _switch(branch):
     repo_path = find_repo_root()
-    dot_tig = repo_path / '.tig'
-    head = get_head(dot_tig)
+    repo_info = get_repo_info(repo_path)
+    dot_tig = repo_info[".tig"]
+    head = repo_info["head"]
+    head_hash = repo_info["head_hash"]
+    manifests = repo_info["manifests"]
 
-    if branch in os.listdir(dot_tig): # Check if branch exists
-        if head == branch: # Check if already on the branch
-            print(f"Already on branch {branch}")
+    if branch in os.listdir(dot_tig):  # Branch exists
+        if head == branch:  # Already on this branch
+            print(f"Already on branch \33[92m{branch}\33[0m")
             return
-    else: # Create a new branch
-        head_path = dot_tig / head
-        new_branch_path = dot_tig / branch
-        shutil.copytree(head_path, new_branch_path)
-    change_head(dot_tig, branch) # Change the HEAD to the new branch
-    print(f"Switched to branch {branch}")
+    else:  # Create a new branch
+        try:
+            for commit in os.listdir(manifests):
+                if commit.startswith(head_hash):
+                    files = read_file_lines(manifests / commit)
+                    hashed_files = []  # Store the parsed files
+                    for line in files:
+                        try:
+                            name, hash_code, _ = line.strip().split(",")
+                            hashed_files.append((name, hash_code))
+                        except ValueError:
+                            print(f"Skipping invalid line in commit file: {line}")
+                    create_branch(repo_path, hashed_files, branch, head)
+        except Exception as e:
+            print(f"Error creating branch {branch}: {e}")
+            return
+
+    # Update HEAD to point to the new branch with the same commit hash as the current branch
+    manifests = dot_tig / branch / "manifests"
+    manifests = sorted(os.listdir(manifests))
+    new_head_hash = manifests[-1].replace(".csv", "")
+    change_head(branch, new_head_hash)
+    print(f"Switched to branch \33[92m{branch}\33[0m")
 
 def _branch():
     repo_path = find_repo_root()
-    dot_tig = repo_path / '.tig'
-    head = get_head(dot_tig)
+    repo_info = get_repo_info(repo_path)
+    dot_tig = repo_info[".tig"]
+    head = repo_info["head"]
 
     branches = [branch for branch in os.listdir(dot_tig) if os.path.isdir(dot_tig / branch)]
     print(f"Branches in the repository:")
@@ -377,10 +623,92 @@ def _branch():
             print(f"  {branch}")
 
 ############################################
-################# STASH ####################
+################# MERGE ####################
 ############################################
-def _stash():
-    pass
+
+def _merge(branch2, mode=False):
+    repo_root = find_repo_root()
+    repo_info = get_repo_info(repo_root)
+
+    head = repo_info["head"]
+    head_hash = repo_info["head_hash"]
+    curr_manifests_path = Path(repo_info["manifests"])
+    curr_backup_path = Path(repo_info["backup"])
+
+    commits = sorted(os.listdir(curr_manifests_path))
+
+    assert commits, f"Error: No commits found in branch {head}"
+    assert f'{head_hash}.csv' in commits, f"Error: HEAD commit {head_hash} not found in branch {head}"
+    assert f'{head_hash}.csv' == commits[-1], f"Error: HEAD commit {head_hash} is not the latest commit in branch {head}"
+    assert branch2 in os.listdir(Path(repo_info[".tig"])), f"Error: Branch {branch2} not found"
+
+    branch2_manifests_path = Path(repo_info[".tig"]) / branch2 / "manifests"
+    branch2_backup_path = Path(repo_info[".tig"]) / branch2 / "backup"
+    branch2_commits = sorted(os.listdir(branch2_manifests_path))
+
+    assert branch2_commits, f"Error: No commits found in branch {branch2}"
+
+    # Get the latest commit in branch2
+    branch2_head_hash = branch2_commits[-1]
+
+    branch2_manifest = parse_manifest(branch2_manifests_path / branch2_head_hash)
+    main_manifest = parse_manifest(curr_manifests_path / f'{head_hash}.csv')
+
+    # Merge logic
+    new_manifest = {}
+    for file_name, hash_code in branch2_manifest.items():
+        if file_name in main_manifest and main_manifest[file_name] == hash_code:
+            new_manifest[file_name] = hash_code
+        else:
+            if not mode:
+                print(f"Error: File {file_name} has conflicts. Please resolve them before merging.")
+                return
+            elif mode == '--hard':
+                new_manifest[file_name] = hash_code
+            else:
+                print(f"Error: Invalid merge mode {mode}")
+                return
+
+    # Add remaining files from the current branch
+    for file_name, hash_code in main_manifest.items():
+        if file_name not in new_manifest:
+            new_manifest[file_name] = hash_code
+
+    # Write the new manifest as the result of the merge
+    timestamp = current_time()
+    write_manifest(curr_manifests_path, timestamp, list(new_manifest.items()), f"Merged branch {branch2} into {head}")
+    merge_files(branch2_backup_path, curr_backup_path, list(new_manifest.items()))
+
+    # Optional: delete the merged branch and checkout the updated HEAD
+    delete_branch(repo_root, branch2)
+    change_head(head, timestamp)
+    _checkout(timestamp)
+    print(f"Merged branch \33[92m{branch2}\33[0m into \33[92m{head}\33[0m")
+
+
+def delete_branch(repo_path: Path, branch_name: str):
+    branch_path = repo_path / ".tig" / branch_name
+    if branch_path.exists():
+        shutil.rmtree(branch_path)
+        print(f"Deleted branch \33[92m{branch_name}\33[0m")
+    else:
+        print(f"Branch \33[91m{branch_name}\33[0m does not exist")
+
+def merge_files(branch_backup_path, main_backup_path, manifest):
+    branch_backup_path = Path(branch_backup_path)
+    main_backup_path = Path(main_backup_path)
+
+    for file_name, hash_code in manifest:
+        source_path = branch_backup_path / hash_code
+        target_path = main_backup_path / hash_code
+
+        if not source_path.exists():
+            print(f"Warning: File {source_path} does not exist in the branch backup.")
+            continue
+
+        # Copy if the file does not already exist in the target backup path
+        if not target_path.exists():
+            shutil.copy(source_path, target_path)
 
 ############################################
 ################## MAIN ####################
@@ -439,7 +767,14 @@ COMMANDS = {
             # --soft and --hard are handled in main()
         ],
         "handler": lambda args: _reset(args.commit_id, "--soft" if args.soft else "--hard"),
-    }
+    },
+    "merge": {
+        "help": "Merge two branches",
+        "arguments": [
+            ("branch2", "Branch to merge from"),
+        ],
+        "handler": lambda args: _merge(args.branch2, '--hard' if args.hard else False),
+    },
 }
 
 
@@ -459,6 +794,11 @@ def main():
             )
             mode_group.add_argument(
                 "--hard", action="store_true", help="Perform a hard reset (default)"
+            )
+        elif command == "merge":
+            subparser.add_argument("branch2", help="Branch to merge from")
+            subparser.add_argument(
+                "--hard", action="store_true", help="Perform a hard merge"
             )
         else:
             # Handle other commands' arguments
@@ -490,3 +830,6 @@ def main():
     else:
         parser.print_help()
         sys.exit(1)
+
+if __name__ == "__main__":
+    main()
