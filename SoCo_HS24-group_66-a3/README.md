@@ -75,7 +75,7 @@ J --> untracked_files.txt
 
 # TIG Operations: In-Depth Explanation
 
-## Initialize a Repository (`tig init`)
+## Initialize a Repository
 
 The `init` command sets up a new TIG repository by creating the required `.tig` directory structure inside the specified `<repo>` directory.
 
@@ -106,7 +106,7 @@ The `init` command sets up a new TIG repository by creating the required `.tig` 
 	cd my_repo 
 	ls -a # Output: .tig
 	```
- ## Add Files to Staging (`tig add`)
+ ## Add Files to Staging
 
 The `add` command stages files for the next commit. Staged files are stored in the `staged_files.txt` file within the current branch directory.
 
@@ -142,8 +142,7 @@ The `add` command stages files for the next commit. Staged files are stored in t
 	# myfile.txt,8a9faaa11f8ea34f79f4cb575cdba3901330a4fe37ded0d8323104797c3c5d08
 	```
 
-## Commit Changes (`tig commit`)
-
+## Commit Changes
 The `commit` command creates a snapshot of the staged files, associating them with a unique commit hash and a descriptive message. The commit is logged, and the repository's `HEAD` is updated.
 
 ### Steps Performed:
@@ -205,7 +204,7 @@ file1.txt,abc123
 file2.txt,def456
 ```
 
-## Switch Branches (`_switch`)
+## Switch Branches
 
 The `_switch` function allows the user to switch to an existing branch or create a new one if it doesn't exist. It interacts with the repository's `.tig` structure to manage branch metadata and commit histories.
 
@@ -267,7 +266,7 @@ The `_switch` function allows the user to switch to an existing branch or create
     -   `HEAD` points to `feature`.
 
  
-## Show Active Branches (`_branch`)
+## Show Active Branches
 The `_branch` function lists all the branches in the repository and highlights the current branch. This is useful for understanding the structure of the repository and identifying which branch is currently active.
 
 ### Steps Performed:
