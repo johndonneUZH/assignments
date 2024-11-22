@@ -96,6 +96,36 @@ def _add(filename):
     write_file(untracked_path, [f"{file},{hash_}\n" for file, hash_ in untracked_files.items()])
     write_file(modified_path, [f"{file},{hash_}\n" for file, hash_ in modified_files.items()])
 
+############################################
+################# UNSTAGE ##################
+############################################
+
+def _unstage(filename):
+    repo_info = get_repo_info(find_repo_root())
+    staged_path = repo_info["staged_files"]
+    modified_path = repo_info["modified_files"]
+
+    # Normalize the file path
+    file_path = Path(filename).resolve()
+    relative_file_path = str(file_path.relative_to(find_repo_root()))
+
+    # Load current staged files
+    staged_files = parse_files(read_file_lines(staged_path))
+
+    if relative_file_path not in staged_files:
+        print(f"Error: File {filename} is not staged.")
+        return
+
+    # Remove the file from staged files
+    staged_hash = staged_files.pop(relative_file_path)
+
+    # Add it back to the modified files list
+    modified_files = parse_files(read_file_lines(modified_path))
+    modified_files[relative_file_path] = staged_hash
+
+    # Write updated states to disk
+    write_file(staged_path, [f"{file},{hash_}\n" for file, hash_ in staged_files.items()])
+    write_file(modified_path, [f"{file},{hash_}\n" for file, hash_ in modified_files.items()])
 
 ############################################
 ################# COMMIT ###################
@@ -694,16 +724,18 @@ COMMANDS = {
         "help": "Reset the repository to a specific commit",
         "arguments": [
             ("commit_id", "Commit ID to reset to"),
-            # --soft and --hard are handled in main()
         ],
         "handler": lambda args: _reset(args.commit_id, "--soft" if args.soft else "--hard"),
     },
     "merge": {
         "help": "Merge two branches",
-        "arguments": [
-            ("branch2", "Branch to merge from"),
-        ],
+        "arguments": [("branch2", "Branch to merge from")],
         "handler": lambda args: _merge(args.branch2, '--hard' if args.hard else False),
+    },
+    "unstage": {
+        "help": "Unstage a file from the staging area",
+        "arguments": [("filename", "File to unstage")],
+        "handler": lambda args: _unstage(args.filename),
     },
 }
 
@@ -736,15 +768,10 @@ def main():
                 if isinstance(arg, tuple):
                     arg_name, arg_help = arg
                     if arg_name.startswith("--"):
-                        # Optional flag argument
-                        subparser.add_argument(
-                            arg_name, action="store_true", help=arg_help
-                        )
+                        subparser.add_argument(arg_name, action="store_true", help=arg_help)
                     else:
-                        # Positional argument
                         subparser.add_argument(arg_name, help=arg_help)
                 else:
-                    # Positional argument without help text
                     subparser.add_argument(arg)
 
     args = parser.parse_args()
@@ -760,6 +787,7 @@ def main():
     else:
         parser.print_help()
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()
