@@ -64,6 +64,7 @@ J --> untracked_files.txt
 |---------------------------|-------------------------------------|----------------------------------------------------------------|
 | [Initialize a Repository](#initialize-a-repository)   | `'tig init <repo>'`                | Creates a new TIG repository with the required `.tig` structure. |
 | [Add Files to Staging](#add-files-to-staging)      | `'tig add <filename>'`<br>`'tig add .'` | Stages the specified file(s) for the next commit. Use `'tig add .'` to stage all modified files. |
+| [Unstage Files](#unstage-files)      | `'tig unstage <filename>'` | Removes a file from the staging area and moves it back to the modified state. |
 | [Check Repository Status](#check-repository-status)   | `'tig status'`                     | Displays the current state of the repository, including staged, modified, and untracked files. |
 | [Commit Changes](#commit-changes)            | `'tig commit <message>'`           | Commits the staged files with a descriptive message.           |
 | [View Commit History](#view-commit-history)       | `'tig log'`                        | Displays the commit history with hashes and messages.          |
@@ -144,6 +145,69 @@ The `add` command stages files for the next commit. Staged files are stored in t
 	# Output:
 	# myfile.txt,8a9faaa11f8ea34f79f4cb575cdba3901330a4fe37ded0d8323104797c3c5d08
 	```
+
+
+
+
+
+## Unstage Files
+
+The `_unstage` function removes a specified file from the staging area and re-categorizes it as modified, allowing the user to continue editing before staging it again.
+
+#### Steps Performed:
+
+1.  **Retrieve Repository Metadata**:
+    
+    -   The function identifies the repository root directory using `find_repo_root()` and retrieves metadata paths using `get_repo_info()`.
+    -   Key metadata includes:
+        -   Path to the `staged_files.txt` file.
+        -   Path to the `modified_files.txt` file.
+2.  **Normalize and Validate the File Path**:
+    -   Converts the provided file path to an absolute path and resolves it to a relative path based on the repository root.
+    -   Checks if the file is present in the `staged_files.txt`. If the file isn’t staged, an error is printed, and the function exits.
+3.  **Remove the File from the Staging Area**:
+    -   If the file is staged, its entry is removed from the `staged_files.txt`.
+4.  **Reclassify the File as Modified**:
+    -   The function retrieves the file's hash from the staged area and adds it to the `modified_files.txt`.
+5.  **Write Updates to Metadata**: 
+    -   Updates the `staged_files.txt` to remove the file.
+    -   Updates the `modified_files.txt` to include the file.
+
+#### Scenario:
+
+You have staged `file1.txt` but decide to unstage it.
+
+```bash
+`tig unstage file1.txt` 
+```
+#### Execution:
+
+1.  **Before Execution**:
+    
+    -   `staged_files.txt` contains:
+        
+        ```text
+        `file1.txt,abc123` 
+        ```
+    -   `modified_files.txt` is empty:
+	       ```
+	       
+	       ```
+2.  **Execution**:
+    
+    -   `_unstage` removes `file1.txt` from `staged_files.txt` and adds it to `modified_files.txt` with its hash.
+3.  **After Execution**:
+    
+    -   `staged_files.txt` is now empty:  
+	       ```
+	       
+	       ```
+        
+    -   `modified_files.txt` contains:
+        ```text
+        `file1.txt,abc123` 
+        ```
+
 
 
 
