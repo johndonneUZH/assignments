@@ -58,11 +58,53 @@ public class Hacker {
         return Communist.readFileLines(metadataPath.resolve("HEAD").toString()).get(0).strip().split(",")[1];
     }
 
+    public static void displayStatus(HashMap<String, String> stagedFilesDict, List<String> modifiedFiles, HashMap<String, String> notModifiedDict, List<String> remainingUntracked, String head) {
+        System.out.println("\nOn branch " + head + "\n");
+        if (stagedFilesDict.isEmpty() && modifiedFiles.isEmpty() && remainingUntracked.isEmpty()) {
+            System.out.println("\033[93mAll files are up to date\n\033[0m");
+            return;
+        }
+
+        if (!notModifiedDict.isEmpty()) {
+            System.out.println("Files already committed and up to date:");
+            for (String name : notModifiedDict.keySet()) {
+                System.out.println("\t\t\033[93mcommitted:\t" + name + "\033[0m");
+            }
+            System.out.println("");
+        }
+
+        if (!stagedFilesDict.isEmpty()) {
+            System.out.println("Changes to be committed:");
+            System.out.println('\t' + "(use \"tig restore --staged <file>...\" to unstage)");
+            for (String name : stagedFilesDict.keySet()) {
+                System.out.println("\t\t\033[92mnew file:\t" + name + "\033[0m");
+            }
+            System.out.println("");
+        }
+
+        if (!modifiedFiles.isEmpty()) {
+            System.out.println("Changes not staged for commit:");
+            System.out.println('\t' + "(use \"tig add <file>...\" to update what will be committed)");
+            System.out.println('\t' + "(use \"tig restore <file>...\" to discard changes in working directory)");
+            for (String name : modifiedFiles) {
+                System.out.println("\t\t\033[91mmodified:\t" + name + "\033[0m");
+            }
+            System.out.println("");
+        }
+
+        if (!remainingUntracked.isEmpty()) {
+            System.out.println("Untracked files:");
+            System.out.println('\t' + "(use \"tig add <file>...\" to include in what will be committed)");
+            for (String name : remainingUntracked) {
+                System.out.println("\t\t\033[91m" + name + "\033[0m");
+            }
+            System.out.println("");
+        }
+    }
+
     public static void main(String[] args) {
-        try {
-            String repoPath = findRepoRoot();
-            HashMap<String, Path> repoInfo = getRepoInfo(repoPath);
-            System.out.println(repoInfo);
+        try {   
+            // TO implement further
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
