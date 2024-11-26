@@ -4,6 +4,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
@@ -120,13 +121,39 @@ public class God {
         }
     }
 
+    public static void deleteBranch(String repoPath, String branchName) {
+        Path branchPath = Paths.get(repoPath, ".tig", branchName);
+        try {
+            if (Files.exists(branchPath)) {
+                deleteRecursively(branchPath);
+                System.out.println("Deleted branch " + branchName);
+            } else {
+                System.out.println("Branch " + branchName + " does not exist");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void deleteRecursively(Path path) throws IOException {
+        if (Files.isDirectory(path)) {
+            try (DirectoryStream<Path> entries = Files.newDirectoryStream(path)) {
+                for (Path entry : entries) {
+                    deleteRecursively(entry);
+                }
+            }
+        }
+        Files.delete(path); // Delete the file or empty directory
+    }
+
     public static void main(String[] args) {
         try {
             String repoPath = Hacker.findRepoRoot();
-            Hasher hasher = new Hasher();
-            List<FileEntry> hashed = hasher.HashAll(Paths.get(repoPath));
+            // Hasher hasher = new Hasher();
+            // List<FileEntry> hashed = hasher.HashAll(Paths.get(repoPath));
 
-            createBranch(repoPath, hashed, "master", null);
+            // createBranch(repoPath, hashed, "dev", null);
+            deleteBranch(repoPath, "dev");
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
