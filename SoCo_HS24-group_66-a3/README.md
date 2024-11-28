@@ -593,3 +593,51 @@ tig merge feature
     
     -   The merged state includes `file1.txt`, `file2.txt` (from `feature`), and `file3.txt`.
     -   `HEAD` is updated to point to the new commit with the merged state.
+
+
+
+## Diff Files
+The `diff` command compares the current working file against the most recent committed version. It highlights changes, including additions and deletions. Providing a unified diff format
+
+### Steps Performed:
+
+-   **Validate File Existance**:  
+	- It ensures that the file exists in the working directory and was part of the last commit.
+    
+-   **Retrieve Last Commit Information**:
+    
+    -   It reads the manifest file of the most recent commit, found by the name, to find the last recorded hash for the file to be compared.
+
+-   **Compare Current and Committed Versions**:
+    
+    -  It computes the hash of the working file with the util function of hash and compares it with the hash on the manifest of the file to compare.
+    	- if hashes differ, the contents of the two versions are read line by line and the diff is generated using the diff library.
+
+-   **Display the Diffe**:
+    
+    -   Outputs differences in a clear, color-coded format:
+    	-   Additions: Green
+		-   Deletions: Red
+ 		-   Unchanged: No highlight      
+#### Scenario:
+- File `example.txt` was committed in the last commit.
+- You modify the file locally and want to see what changed.
+
+#### Commands:
+```bash
+tig diff example.txt
+```
+
+#### Before Execution:
+- `example.txt` content in working dictionary:
+```bash
+Hello, World!
+This is a new line.
+```
+- Last committed content of `example.txt`:
+```bash
+--- example.txt (committed)
++++ example.txt (working)
++ This is a new line.
+```
+

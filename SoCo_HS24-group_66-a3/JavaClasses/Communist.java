@@ -1,13 +1,13 @@
 package JavaClasses;
 
 import java.util.HashMap;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
+import java.io.IOException;
+import java.nio.file.*;
 
 public class Communist {
+
     public static void writeFileLines(String path, List<String> lines) {
         try {
             Files.write(Paths.get(path), lines);
@@ -21,13 +21,13 @@ public class Communist {
             return Files.readAllLines(Paths.get(path));
         } catch (IOException e) {
             e.printStackTrace();
-            return null;
+            return new ArrayList<>(); // Retorna una lista vacía en caso de error
         }
     }
 
     public static void appendFileLine(String path, String line) {
         try {
-            Files.write(Paths.get(path), line.getBytes(), java.nio.file.StandardOpenOption.APPEND);
+            Files.write(Paths.get(path), line.getBytes(), StandardOpenOption.APPEND);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -72,7 +72,7 @@ public class Communist {
     }
 
     public static String current_time() {
-        return String.valueOf(System.currentTimeMillis());
+        return String.valueOf(System.currentTimeMillis() / 1000L); // Unix timestamp
     }
 
     public static void writeManifest(String manifests_path, String timestamp, HashMap<String, FileEntry> manifest, String message) {
@@ -80,10 +80,11 @@ public class Communist {
         try {
             Files.createDirectories(manifestDir);
             Path manifestFile = manifestDir.resolve(timestamp + ".csv");
-            List<String> lines = List.of("filename,hash,message");
+            List<String> lines = new ArrayList<>();
+            lines.add("filename,hash,message");
             for (String filename : manifest.keySet()) {
                 FileEntry entry = manifest.get(filename);
-                lines.add(filename + "," + entry.hash() + "," + message);
+                lines.add(filename + "," + entry.getHash() + "," + message);
             }
             Files.write(manifestFile, lines);
         } catch (IOException e) {
@@ -91,15 +92,16 @@ public class Communist {
         }
     }
 
-    public static void copyFiles(String stagedPath, String backupPath, HashMap<String, FileEntry> manifest) {
+    public static void copyFiles(String repoRoot, String backupPath, HashMap<String, FileEntry> manifest) {
         Path backupDir = Paths.get(backupPath);
-        Path stagedDir = Paths.get(stagedPath);
         try {
             Files.createDirectories(backupDir);
-            for (String fileName : manifest.keySet()) {
-                FileEntry entry = manifest.get(fileName);
-                Path sourcePath = stagedDir.resolve(fileName).toAbsolutePath();
-                Path destPath = backupDir.resolve(entry.hash());
+            for (FileEntry entry : manifest.values()) {
+                String fileName = entry.getFilename();
+                String fileHash = entry.getHash();
+
+                Path sourcePath = Paths.get(repoRoot, fileName);
+                Path destPath = backupDir.resolve(fileHash);
 
                 if (!Files.exists(sourcePath)) {
                     throw new IOException("Error: " + sourcePath + " not found");
@@ -114,11 +116,25 @@ public class Communist {
         }
     }
 
+    public static HashMap<String, String> parseFiles(Path filePath) {
+        HashMap<String, String> filesMap = new HashMap<>();
+        List<String> lines = readFileLines(filePath.toString());
+        if (lines != null) {
+            for (String line : lines) {
+                String[] parts = line.split(",");
+                if (parts.length >= 2) {
+                    filesMap.put(parts[0], parts[1]);
+                }
+            }
+        }
+        return filesMap;
+    }
+
     public static void main(String[] args) {
         HashMap<String, FileEntry> manifest = parseManifest("1732655965.csv");
         if (manifest != null) {
             manifest.forEach((filename, entry) -> {
-                System.out.println("Filename: " + filename + ", Hash: " + entry.hash());
+                System.out.println("Filename: " + filename + ", Hash: " + entry.getHash());
             });
         }
     }
