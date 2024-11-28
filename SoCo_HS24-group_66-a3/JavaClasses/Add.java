@@ -1,8 +1,5 @@
-import JavaClasses.Hacker;
-import JavaClasses.FileEntry;
-import JavaClasses.Communist;
-import JavaClasses.Hasher;
-import JavaClasses.Init;
+package JavaClasses;
+
 import java.util.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -32,6 +29,7 @@ public class Add {
     public static void add(String filename, String stagedPath, String untrackedPath, String modifiedPath) throws IOException {
         if (filename.equals(".")) {
             stageFilesFrom(untrackedPath,stagedPath, untrackedPath, modifiedPath);
+            stageFilesFrom(modifiedPath, stagedPath, untrackedPath, modifiedPath);
         }
 
         Path filePath = Paths.get(filename).toAbsolutePath().normalize();
@@ -50,6 +48,10 @@ public class Add {
     
         // Ensure minimal file names are stored/displayed
         String repoRoot = Hacker.findRepoRoot();
+        if (Ignore.getIgnored(filePath.toString(), repoRoot)){
+            System.out.println("File ignored:"+filename);
+            return;
+        }
         String relativeFilePath = Paths.get(repoRoot).relativize(filePath).toString();
         
         // Handle files already in the staging area

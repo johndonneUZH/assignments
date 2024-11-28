@@ -20,6 +20,8 @@ public class Hasher {
             
             for (Path file : files) {
                 String relativePath = root.relativize(file).toString();
+                if (relativePath.startsWith(".tig")){continue;}
+                if (Ignore.getIgnored(file.toString(), root.toString())){continue;}
                 String hashCode = calculateHash(file);
                 result.add(new FileEntry(relativePath, hashCode));
             }
