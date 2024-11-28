@@ -28,7 +28,10 @@ public class God {
 
     public static void createFile(String path) {
         try {
-            Files.createFile(Paths.get(path));
+            Path filePath = Paths.get(path);
+            if (!Files.exists(filePath)) {
+                Files.createFile(filePath);
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -48,8 +51,8 @@ public class God {
             if (hashedFiles != null && !hashedFiles.isEmpty()) {
                 Files.writeString(untrackedFilesPath, "");
                 for (FileEntry entry : hashedFiles) {
-                    String filename = entry.filename();
-                    String hash = entry.hash();
+                    String filename = entry.getFilename();
+                    String hash = entry.getHash();
                     if (filename.startsWith(".tig")) {
                         continue;
                     }
@@ -83,6 +86,7 @@ public class God {
             }
 
             Files.writeString(metadataPath.resolve("HEAD"), branchName + "," + head + "\n");
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -106,7 +110,7 @@ public class God {
             Files.copy(headManifestPath, newBranchManifestPath);
 
             for (FileEntry entry : hashedFiles) {
-                String hashCode = entry.hash();
+                String hashCode = entry.getHash();
                 Path sourcePath = headBackupPath.resolve(hashCode);
                 Path targetPath = newBranchBackupPath.resolve(hashCode);
 

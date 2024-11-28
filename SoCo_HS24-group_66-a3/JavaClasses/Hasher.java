@@ -10,12 +10,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Hasher {
-    public List<FileEntry> HashAll(Path root) {
+    public List<FileEntry> hashAll(Path root) {
         List<FileEntry> result = new ArrayList<>();
-
+    
         try (Stream<Path> paths = Files.walk(root)) {
-
+    
             List<Path> files = paths.filter(Files::isRegularFile)
+                                    .filter(path -> !path.toString().contains(".tig"))
                                     .collect(Collectors.toList());
             
             for (Path file : files) {
@@ -23,11 +24,11 @@ public class Hasher {
                 String hashCode = calculateHash(file);
                 result.add(new FileEntry(relativePath, hashCode));
             }
-
-        }
-        catch (IOException e) { e.printStackTrace(); }
+    
+        } catch (IOException e) { e.printStackTrace(); }
         return result;
     }
+    
 
     public String calculateHash(Path file) {
         try {
