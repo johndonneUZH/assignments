@@ -6,7 +6,12 @@ import java.util.*;
 
 public class Status {
 
-    public static void execute(String filename) {
+    // ANSI escape codes for colors
+    private static final String RESET = "\033[0m";
+    private static final String RED = "\033[91m";
+    private static final String GREEN = "\033[92m";
+
+    public static void execute(String... args) {
         try {
             // Find the repository root and get repository information
             String repoRoot = Hacker.findRepoRoot();
@@ -21,63 +26,83 @@ public class Status {
 
             Hasher hasher = new Hasher();
 
-            // Get the path to the specified file
-            Path filePath = repoRootPath.resolve(filename);
-            if (!Files.exists(filePath)) {
-                System.err.println("Error: File '" + filename + "' does not exist in the working directory.");
-                return;
-            }
-
-            // Calculate the current hash of the file
-            String currentHash = hasher.calculateHash(filePath);
-            String relativeFilePath = repoRootPath.relativize(filePath).toString();
-
             // Read current state files
             Map<String, String> committedFiles = Communist.parseFiles(committedPath);
             Map<String, String> stagedFiles = Communist.parseFiles(stagedPath);
             Map<String, String> untrackedFiles = Communist.parseFiles(untrackedPath);
             Map<String, String> modifiedFiles = Communist.parseFiles(modifiedPath);
 
-            // Initialize variables
-            boolean inCommitted = committedFiles.containsKey(relativeFilePath);
-            boolean inStaged = stagedFiles.containsKey(relativeFilePath);
-            boolean inUntracked = untrackedFiles.containsKey(relativeFilePath);
-            boolean inModified = modifiedFiles.containsKey(relativeFilePath);
+            // Store updated untracked and modified files
+            Map<String, String> newUntrackedFiles = new HashMap<>(untrackedFiles);
+            Map<String, String> newModifiedFiles = new HashMap<>(modifiedFiles);
 
-            String committedHash = committedFiles.get(relativeFilePath);
-            String stagedHash = stagedFiles.get(relativeFilePath);
-
-            if (inCommitted && currentHash.equals(committedHash)) {
-                // File is committed and unchanged
-                System.out.println(filename + " - Committed");
-            } else if (inStaged && currentHash.equals(stagedHash)) {
-                // File is staged and unchanged
-                System.out.println(filename + " - Staged");
-            } else if ((inCommitted && !currentHash.equals(committedHash)) ||
-                       (inStaged && !currentHash.equals(stagedHash))) {
-                // File is modified
-                System.out.println(filename + " - Modified");
-
-                // Update modified_files.txt and untracked_files.txt
-                modifiedFiles.put(relativeFilePath, currentHash);
-                untrackedFiles.put(relativeFilePath, currentHash);
-
-                // Write the updated state back to disk
-                Communist.writeFileLines(modifiedPath.toString(), filesMapToList(modifiedFiles));
-                Communist.writeFileLines(untrackedPath.toString(), filesMapToList(untrackedFiles));
-            } else if (!inCommitted && !inStaged && !inUntracked && !inModified) {
-                // File is untracked
-                System.out.println(filename + " - Untracked");
-
-                // Add to untracked_files.txt
-                untrackedFiles.put(relativeFilePath, currentHash);
-
-                // Write the updated state back to disk
-                Communist.writeFileLines(untrackedPath.toString(), filesMapToList(untrackedFiles));
+            // Determine whether to process a single file or all files
+            List<Path> filesToProcess = new ArrayList<>();
+            if (args.length == 0) {
+                // No arguments, process all files in the working directory
+                Files.walk(repoRootPath)
+                        .filter(path -> !Files.isDirectory(path))
+                        .filter(path -> !path.startsWith(repoRootPath.resolve(".tig")))
+                        .forEach(filesToProcess::add);
+            } else if (args.length == 1) {
+                // Process a single file
+                Path filePath = repoRootPath.resolve(args[0]);
+                if (!Files.exists(filePath)) {
+                    System.err.println("Error: File '" + args[0] + "' does not exist in the working directory.");
+                    return;
+                }
+                filesToProcess.add(filePath);
             } else {
-                // Default case (should not happen)
-                System.out.println(filename + " - Status Unknown");
+                System.err.println("Usage: tig status [filename]");
+                return;
             }
+
+            for (Path filePath : filesToProcess) {
+                String relativeFilePath = repoRootPath.relativize(filePath).toString();
+                String currentHash = hasher.calculateHash(filePath);
+
+                boolean inCommitted = committedFiles.containsKey(relativeFilePath);
+                boolean inStaged = stagedFiles.containsKey(relativeFilePath);
+   
+
+                String committedHash = committedFiles.get(relativeFilePath);
+                String stagedHash = stagedFiles.get(relativeFilePath);
+
+                boolean isModified = false;
+
+                // Check if the file is modified
+                if (inCommitted && !currentHash.equals(committedHash)) {
+                    isModified = true;
+                } else if (inStaged && !currentHash.equals(stagedHash)) {
+                    isModified = true;
+                }
+
+                if (isModified) {
+                    // File is modified
+                    System.out.println(RED + relativeFilePath + " - Modified" + RESET);
+
+                    // Update modified_files.txt and untracked_files.txt
+                    newModifiedFiles.put(relativeFilePath, currentHash);
+                    newUntrackedFiles.put(relativeFilePath, currentHash);
+
+                } else if (inStaged) {
+                    // File is staged and unchanged
+                    System.out.println(GREEN + relativeFilePath + " - Staged" + RESET);
+                } else if (inCommitted) {
+                    // File is committed and unchanged
+                    System.out.println(GREEN + relativeFilePath + " - Committed" + RESET);
+                } else {
+                    // File is untracked
+                    System.out.println(RED + relativeFilePath + " - Untracked" + RESET);
+
+                    // Add to untracked_files.txt
+                    newUntrackedFiles.put(relativeFilePath, currentHash);
+                }
+            }
+
+            // Write the updated state back to disk
+            Communist.writeFileLines(untrackedPath.toString(), filesMapToList(newUntrackedFiles));
+            Communist.writeFileLines(modifiedPath.toString(), filesMapToList(newModifiedFiles));
 
         } catch (IOException e) {
             e.printStackTrace();

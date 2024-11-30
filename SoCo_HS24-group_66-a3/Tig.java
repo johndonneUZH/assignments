@@ -6,7 +6,6 @@ import JavaClasses.Checkout;
 import JavaClasses.Diff;
 import JavaClasses.Status;
 
-// Importa las demás clases según sea necesario
 
 import java.util.*;
 
@@ -118,16 +117,17 @@ public class Tig {
             }
         ));
         commands.put("status", new CommandInfo(
-            "Show the status of a file",
-            List.of("filename"),
+            "Show the status of the repository or a specific file",
+            List.of("[filename]"),
             args -> {
-                if (args.length != 1) {
-                    System.err.println("Usage: tig status <filename>");
+                if (args.length > 1) {
+                    System.err.println("Usage: tig status [filename]");
                     return;
                 }
-                Status.execute(args[0]);
+                Status.execute(args);
             }
         ));
+        
 
     }
 
