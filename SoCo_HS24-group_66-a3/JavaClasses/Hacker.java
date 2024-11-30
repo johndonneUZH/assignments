@@ -13,22 +13,19 @@ import java.util.List;
 public class Hacker {
 
     public static String findRepoRoot() throws FileNotFoundException {
-        try {
-            String startDirectory = System.getProperty("user.dir");
-            File currentDir = new File(startDirectory).getAbsoluteFile();
-            
-            while (!currentDir.equals(currentDir.getParentFile())) {
-                File tigDir = new File(currentDir, ".tig");
-                if (tigDir.isDirectory()) {
-                    return currentDir.getAbsolutePath();
-                }
-                currentDir = currentDir.getParentFile();
+        String startDirectory = System.getProperty("user.dir");
+        File currentDir = new File(startDirectory).getAbsoluteFile();
+        
+        while (currentDir != null) {
+            File tigDir = new File(currentDir, ".tig");
+            if (tigDir.isDirectory()) {
+                return currentDir.getAbsolutePath();
             }
-            return startDirectory;
-        } catch (Exception e) {
-            throw new FileNotFoundException("No repository found");
+            currentDir = currentDir.getParentFile();
         }
+        throw new FileNotFoundException("No repository found");
     }
+    
 
     public static HashMap<String, Path> getRepoInfo(String repoPath) throws FileNotFoundException {
         HashMap<String, Path> repoInfo = new HashMap<>();
@@ -50,17 +47,39 @@ public class Hacker {
     }
 
     public static void changeHead(String head, String commit) throws FileNotFoundException {
+        if (commit == null) {
+            commit = "";
+        }
         Path headPath = getRepoInfo(findRepoRoot()).get(".tig").resolve("HEAD");
         Communist.writeFileLines(headPath.toString(), List.of(head.strip() + ',' + commit.strip()));
     }
+    
 
     public static String getHead(Path metadataPath) throws FileNotFoundException {
-        return Communist.readFileLines(metadataPath.resolve("HEAD").toString()).get(0).strip().split(",")[0];
+        List<String> headLines = Communist.readFileLines(metadataPath.resolve("HEAD").toString());
+        if (headLines.isEmpty()) {
+            return "";
+        }
+        String headLine = headLines.get(0).strip();
+        String[] parts = headLine.split(",");
+        return parts[0].strip();
     }
+    
 
     public static String getHeadHash(Path metadataPath) throws FileNotFoundException {
-        return Communist.readFileLines(metadataPath.resolve("HEAD").toString()).get(0).strip().split(",")[1];
+        List<String> headLines = Communist.readFileLines(metadataPath.resolve("HEAD").toString());
+        if (headLines.isEmpty()) {
+            return "";
+        }
+        String headLine = headLines.get(0).strip();
+        String[] parts = headLine.split(",");
+        if (parts.length > 1) {
+            return parts[1].strip();
+        } else {
+            return "";
+        }
     }
+    
 
     public static void displayStatus(HashMap<String, String> stagedFilesDict, List<String> modifiedFiles, HashMap<String, String> notModifiedDict, List<String> remainingUntracked, String head) {
         System.out.println("\nOn branch " + head + "\n");
