@@ -53,7 +53,11 @@ public class Tig {
                     System.err.println("Usage: tig add <filename>");
                     return;
                 }
-                Add.execute(args[0]);
+                try {
+                    Add.execute(args[0]);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         ));
 

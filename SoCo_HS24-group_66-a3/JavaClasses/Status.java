@@ -59,11 +59,16 @@ public class Status {
 
             for (Path filePath : filesToProcess) {
                 String relativeFilePath = repoRootPath.relativize(filePath).toString();
+
+                // Skip files listed in .tigignore
+                if (Tigignore.isTigIgnore() && Tigignore.skipFile(relativeFilePath, repoRoot)) {
+                    continue;
+                }
+
                 String currentHash = hasher.calculateHash(filePath);
 
                 boolean inCommitted = committedFiles.containsKey(relativeFilePath);
                 boolean inStaged = stagedFiles.containsKey(relativeFilePath);
-   
 
                 String committedHash = committedFiles.get(relativeFilePath);
                 String stagedHash = stagedFiles.get(relativeFilePath);
@@ -106,6 +111,8 @@ public class Status {
 
         } catch (IOException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            System.err.println("Error processing .tigignore: " + e.getMessage());
         }
     }
 

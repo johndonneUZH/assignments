@@ -7,7 +7,7 @@ import java.io.IOException;
 
 public class Add {
 
-    public static void execute(String filename) {
+    public static void execute(String filename) throws Exception {
         try {
             // Find the repository root and get repository information
             String repoRoot = Hacker.findRepoRoot();

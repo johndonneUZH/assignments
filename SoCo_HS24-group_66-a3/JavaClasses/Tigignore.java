@@ -33,7 +33,6 @@ public class Tigignore {
     
             // Compare relative paths
             if (relativeFilePath.equals(normalizedPattern)) {
-                System.out.println("File '" + filename + "' is ignored.");
                 return true; // Skip the file
             }
         }
