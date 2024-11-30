@@ -28,6 +28,13 @@ public class Add {
                 return;
             }
 
+            // Check if the file is ignored
+            if (Tigignore.isTigIgnore()) {
+                if (Tigignore.skipFile(filename, repoRoot)) {
+                    return;
+                }
+            }
+
             // Get the path to the specified file
             Path filePath = Paths.get(repoRoot, filename);
             if (!Files.exists(filePath)) {
