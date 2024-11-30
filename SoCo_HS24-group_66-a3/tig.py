@@ -263,7 +263,7 @@ def unix_to_human_readable(unix_timestamp):
     unix_timestamp = int(unix_timestamp)
     return datetime.fromtimestamp(unix_timestamp).strftime('%Y-%m-%d %H:%M:%S')
 
-def _log():
+def _log(n=5):
     repo_info = get_repo_info(find_repo_root())
     head = repo_info["head"]
     head_hash = repo_info["head_hash"]
@@ -274,21 +274,26 @@ def _log():
     if not commits:
         print(f"\n\033[94mCommit history for branch {head} is empty.\033[0m\n")
         return
+
     print(f"\n\033[94mCommit history for branch {head}:\033[0m\n")
 
-    commits.sort() # Sort commits by date
+    # Sort commits by timestamp in descending order
+    commits.sort(reverse=True, key=lambda x: int(x.replace('.csv', '')))
 
-    for commit in commits:
+    # Limit the number of commits to display
+    commits_to_show = commits[:n]
+
+    for commit in commits_to_show:
         commit_hash = commit.replace('.csv', '')
         if commit_hash == head_hash:
-            print(f"\033[93mcommit {commit.replace('.csv', '')} (HEAD -> {head})\033[0m")
+            print(f"\033[93mcommit {commit_hash} (HEAD -> {head})\033[0m")
         else:
-            print(f"\033[93mcommit {commit.replace('.csv', '')}\033[0m")
-                
+            print(f"\033[93mcommit {commit_hash}\033[0m")
+
         with open(manifests_path / commit) as f:
             lines = f.readlines()
             lines.pop(0)  # Skip the header line
-            print(f"Date: {unix_to_human_readable(commit.replace('.csv', ''))}")
+            print(f"Date: {unix_to_human_readable(commit_hash)}")
             file_name, hash_code, message = lines[0].strip().split(',')
 
             print(f"Message: \033[92m{message}\033[0m")
@@ -697,8 +702,8 @@ COMMANDS = {
     },
     "log": {
         "help": "Show the commit history",
-        "arguments": [],
-        "handler": lambda args: _log(),
+        "arguments": [("--num", "-n", "Number of commits to show")],
+        "handler": lambda args: _log(args.num),
     },
     "checkout": {
         "help": "Reset a commit",
@@ -762,14 +767,20 @@ def main():
             subparser.add_argument(
                 "--hard", action="store_true", help="Perform a hard merge"
             )
+        elif command == "log":
+            subparser.add_argument(
+                "-n", "--num", type=int, default=5, help="Number of commits to show"
+            )
         else:
             # Handle other commands' arguments
             for arg in details.get("arguments", []):
                 if isinstance(arg, tuple):
-                    arg_name, arg_help = arg
-                    if arg_name.startswith("--"):
-                        subparser.add_argument(arg_name, action="store_true", help=arg_help)
-                    else:
+                    arg_names = [name for name in arg[:2] if name.startswith("-")]
+                    arg_name = arg[0] if not arg[0].startswith("-") else None
+                    arg_help = arg[-1]
+                    if arg_names:
+                        subparser.add_argument(*arg_names, help=arg_help, type=str)
+                    elif arg_name:
                         subparser.add_argument(arg_name, help=arg_help)
                 else:
                     subparser.add_argument(arg)
@@ -787,7 +798,6 @@ def main():
     else:
         parser.print_help()
         sys.exit(1)
-
-
+        
 if __name__ == "__main__":
     main()
