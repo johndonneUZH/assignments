@@ -63,8 +63,7 @@ public class Status {
 
                 boolean inCommitted = committedFiles.containsKey(relativeFilePath);
                 boolean inStaged = stagedFiles.containsKey(relativeFilePath);
-                boolean inUntracked = untrackedFiles.containsKey(relativeFilePath);
-                boolean inModified = modifiedFiles.containsKey(relativeFilePath);
+   
 
                 String committedHash = committedFiles.get(relativeFilePath);
                 String stagedHash = stagedFiles.get(relativeFilePath);
