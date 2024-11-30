@@ -6,6 +6,11 @@ import java.util.*;
 
 public class Status {
 
+    // ANSI escape codes for colors
+    private static final String RESET = "\033[0m";
+    private static final String RED = "\033[91m";
+    private static final String GREEN = "\033[92m";
+
     public static void execute(String... args) {
         try {
             // Find the repository root and get repository information
@@ -75,7 +80,7 @@ public class Status {
 
                 if (isModified) {
                     // File is modified
-                    System.out.println(relativeFilePath + " - Modified");
+                    System.out.println(RED + relativeFilePath + " - Modified" + RESET);
 
                     // Update modified_files.txt and untracked_files.txt
                     newModifiedFiles.put(relativeFilePath, currentHash);
@@ -83,13 +88,13 @@ public class Status {
 
                 } else if (inStaged) {
                     // File is staged and unchanged
-                    System.out.println(relativeFilePath + " - Staged");
+                    System.out.println(GREEN + relativeFilePath + " - Staged" + RESET);
                 } else if (inCommitted) {
                     // File is committed and unchanged
-                    System.out.println(relativeFilePath + " - Committed");
+                    System.out.println(GREEN + relativeFilePath + " - Committed" + RESET);
                 } else {
                     // File is untracked
-                    System.out.println(relativeFilePath + " - Untracked");
+                    System.out.println(RED + relativeFilePath + " - Untracked" + RESET);
 
                     // Add to untracked_files.txt
                     newUntrackedFiles.put(relativeFilePath, currentHash);
