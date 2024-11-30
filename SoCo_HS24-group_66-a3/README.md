@@ -909,7 +909,7 @@ Implementation Details:
 - Error Handling: Catches and logs errors for inaccessible files.
 
 ### Communist.java
-Description: Utility class for common file operations like reading, writing, and clearing metadata files.
+Utility class for common file operations like reading, writing, and clearing metadata files.
 
 Workflow:
 1. File Reading: Reads lines from a file into a List<String>.
@@ -948,7 +948,7 @@ Map<String, Path> repoInfo = Hacker.getRepoInfo(repoRoot);
 Path stagedFilesPath = repoInfo.get("staged_files");
 
 ### God.java
-Description: God is a utility class responsible for displaying messages and handling user interactions. It centralizes logging and feedback mechanisms for better consistency across the system.
+God is a utility class responsible for displaying messages and handling user interactions. It centralizes logging and feedback mechanisms for better consistency across the system.
 
 Usage: This class is typically called internally by other classes to:
     - Display success, warning, or error messages.
