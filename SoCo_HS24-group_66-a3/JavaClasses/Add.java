@@ -96,9 +96,61 @@ public class Add {
 
             for (String filename: args) {
                 add(filename, stagedPath, untrackedPath, modifiedPath);
+ 
+            // Get the path to the specified file
+            Path filePath = Paths.get(repoRoot, filename);
+            if (!Files.exists(filePath)) {
+                System.err.println("Error: File '" + filename + "' not found");
+                return;
+            }
+
+            // Check if file is in tigignore
+            List<String> ignoreFiles = Hacker.getIgnored(repoRoot);
+            if (ignoreFiles.contains(filename)) {
+                System.out.println("File '" + filename + "' is ignored (listed in .tigignore).");return;}
+            
+            
+
+  
 
             }
         }catch (Exception e) {
+
+
+            // Calculate the current hash of the file
+            String currentHash = hasher.calculateHash(filePath);
+            String relativeFilePath = Paths.get(repoRoot).relativize(filePath).toString();
+
+            // Read current state files
+            Map<String, String> stagedFiles = Communist.parseFiles(stagedPath);
+            Map<String, String> untrackedFiles = Communist.parseFiles(untrackedPath);
+            Map<String, String> modifiedFiles = Communist.parseFiles(modifiedPath);
+            Map<String, String> committedFiles = Communist.parseFiles(committedPath);
+
+            // Remove the file from untracked and modified if present
+            untrackedFiles.remove(relativeFilePath);
+            modifiedFiles.remove(relativeFilePath);
+
+            // Check if the file has changed since the last commit or is untracked
+            String committedHash = committedFiles.get(relativeFilePath);
+            if (!currentHash.equals(committedHash) || !committedFiles.containsKey(relativeFilePath)) {
+                // The file has changed or is new, add it to staged_files.txt
+                stagedFiles.put(relativeFilePath, currentHash);
+            } else {
+                // The file has not changed, remove it from staged if present
+                stagedFiles.remove(relativeFilePath);
+            }
+
+            // Write the updated state back to disk
+            Communist.writeFileLines(stagedPath.toString(), filesMapToList(stagedFiles));
+            Communist.writeFileLines(untrackedPath.toString(), filesMapToList(untrackedFiles));
+            Communist.writeFileLines(modifiedPath.toString(), filesMapToList(modifiedFiles));
+
+            System.out.println("Added " + filename);
+
+        } catch (FileNotFoundException e) {
+            System.err.println("Error: No repository found");
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }

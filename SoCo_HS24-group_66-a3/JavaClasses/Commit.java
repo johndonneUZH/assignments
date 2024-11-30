@@ -1,3 +1,5 @@
+package JavaClasses;
+
 
 import JavaClasses.Hacker;
 import JavaClasses.FileEntry;
@@ -29,7 +31,7 @@ public class Commit {
             List<String> stagedFiles = Communist.readFileLines(stagedPath);
             if (stagedFiles.isEmpty()){
                 throw new FileNotFoundException("No staged files found to commit.");
-}
+            }
             
             // Hash all files in the repository for a full snapshot
             Hasher hasher = new Hasher();
@@ -37,6 +39,35 @@ public class Commit {
             manifest = new HashMap<>();
             for (FileEntry entry : hashedFiles) {
                 manifest.put(entry.filename(), entry);
+            }
+            Path committedFilesPath = repoInfo.get("committed_files");
+            Path headPath = repoInfo.get(".tig").resolve("HEAD");
+
+            
+
+            List<String> stagedFilesLines = Communist.readFileLines(stagedPath.toString());
+
+            // ignore
+            List<String> ignoreFiles = Hacker.getIgnored(repoRoot);
+            List<String> filteredStagedFiles = new ArrayList<>();
+            for (String line : stagedFilesLines) {
+                String filename = line.split(",")[0];
+                if (!Hacker.isIgnored(Paths.get(repoRoot, filename), ignoreFiles)) {
+                    filteredStagedFiles.add(line);
+                }
+            }
+
+            if (filteredStagedFiles.isEmpty()) {
+                System.out.println("Staging Area Empty: No changes to commit");
+                return null;
+            }
+
+            // Crear el manifiesto del commit
+            for (String line : filteredStagedFiles) {
+                String[] parts = line.split(",");
+                String filename = parts[0];
+                String hash = parts[1];
+                manifest.put(filename, new FileEntry(filename, hash));
             }
 
             String timestamp = Communist.current_time();
@@ -58,6 +89,7 @@ public class Commit {
             return null;
         }
         return manifest;
+    
     }
     public static void main(String[] args){
         if (args.length < 1) {
@@ -73,4 +105,4 @@ public class Commit {
         
     }
 
-}
+    }

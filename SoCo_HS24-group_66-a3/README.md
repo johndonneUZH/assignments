@@ -593,3 +593,496 @@ tig merge feature
     
     -   The merged state includes `file1.txt`, `file2.txt` (from `feature`), and `file3.txt`.
     -   `HEAD` is updated to point to the new commit with the merged state.
+
+
+
+## Diff Files
+The `diff` command compares the current working file against the most recent committed version. It highlights changes, including additions and deletions. Providing a unified diff format
+
+### Steps Performed:
+
+-   **Validate File Existance**:  
+	- It ensures that the file exists in the working directory and was part of the last commit.
+    
+-   **Retrieve Last Commit Information**:
+    
+    -   It reads the manifest file of the most recent commit, found by the name, to find the last recorded hash for the file to be compared.
+
+-   **Compare Current and Committed Versions**:
+    
+    -  It computes the hash of the working file with the util function of hash and compares it with the hash on the manifest of the file to compare.
+    	- if hashes differ, the contents of the two versions are read line by line and the diff is generated using the diff library.
+
+-   **Display the Diffe**:
+    
+    -   Outputs differences in a clear, color-coded format:
+    	-   Additions: Green
+		-   Deletions: Red
+ 		-   Unchanged: No highlight      
+#### Scenario:
+- File `example.txt` was committed in the last commit.
+- You modify the file locally and want to see what changed.
+
+#### Commands:
+```bash
+tig diff example.txt
+```
+
+#### Before Execution:
+- `example.txt` content in working dictionary:
+```bash
+Hello, World!
+This is a new line.
+```
+- Last committed content of `example.txt`:
+```bash
+--- example.txt (committed)
++++ example.txt (working)
++ This is a new line.
+```
+
+# TIG Java - A Minimalistic Version Control System in Java
+
+TIG Java is a minimalistic version control system implemented entirely in Java. Inspired by Git, it allows developers to track, stage, commit, and manage file changes efficiently. The system replicates fundamental Git-like behaviors while incorporating unique extensions, including .tigignore support for ignoring specified files.
+Our implementation was mostly based on our previous mentioned Python implementition.
+## Quick Overview of the task
+
+Most of the followed mentioned, is also mentioned aboth for the python implementation. This is just a quick review.
+
+### Features Overwiew
+
+Repository Initialization:
+- Set up a .tig directory to track file states and commits.
+File Tracking:
+- Manage file states: untracked, staged, modified, and committed.
+Staging and Committing:
+- Add files to the staging area and persist changes in commits.
+Commit History:
+- View past commits, including their IDs, timestamps, and messages.
+File Restoration:
+- Restore the repository to the state of any commit.
+File Differences:
+- Compare the current version of a file with its last committed version.
+Branch Management:
+- Manage branches for independent development streams.
+Custom Extensions:
+- .tigignore support to exclude specific files or patterns from version control.
+
+### Repository Structure
+
+The repository metadata is stored in a .tig directory that organizes commit data, file backups, and state files. This structured approach ensures seamless operation across different commands.
+
+repo/
+├── .tig/
+│   ├── HEAD                # Points to the current branch and commit
+│   ├── main/               # The default branch
+│   │   ├── manifests/      # Stores commit information (CSV files)
+│   │   ├── backup/         # Stores hashed snapshots of files
+│   │   ├── staged_files.txt
+│   │   ├── modified_files.txt
+│   │   ├── untracked_files.txt
+│   │   ├── committed_files.txt
+
+
+### File States
+
+1. Untracked: Files detected in the directory but not yet added to version control. They remain outside the system until explicitly staged.
+2. Modified: Tracked files that have been changed since the last commit or staging.
+3. Staged: Files queued for the next commit. Transitioned from untracked or modified states.
+4. Committed: Files saved permanently in the repository's history.
+
+## Commands in Depth - Here made in seperate file in JavaClasses
+
+### Init.java
+
+Initializes a new repository by creating the .tig directory structure. This is made with the Init class, that is responsible for initializing a new tig repository in a specified directory. It sets up the foundational .tig structure, creates essential state files, and identifies all existing files in the working directory as untracked.This class ensures the repository is ready for version control operations by creating the necessary metadata and configuration files.
+
+Usage: java Tig init <directory>
+
+Parameters:
+- <directory>: Path to the directory where the .tig repository will be initialized. This can be an existing directory or a new one created during initialization.
+
+Workflow:
+1. Verifies the existence of the target directory (<directory>). If it doesn't exist, it creates the .tig directory inside the specified directory. Furthermore, it constructs the .tig directory within <directory> to house metadata and configuration files.
+2. Creates subdirectories for storing commit manifests (manifests) and file backups (backup). It also generates state files (staged_files.txt, untracked_files.txt, etc.) with default empty content.
+3. Initializes the HEAD file to point to the main branch.
+4. Scans the directory for untracked files and lists, hasches them with Hascher.java and writes this information in the untracked_files.txt.
+
+Implementation Notes:
+- Uses Files.createDirectories to build the .tig structure.
+- Hashes untracked files upon initialization to track their state consistently.
+- Uses listWorkingDirectoryFiles: Recursively scans the directory, excluding .tig, and returns a list of FileEntry objects representing untracked files.
+- IOException is caught and logged when creating directories or files fails.
+
+Example:
+java Tig init my_project
+
+### Add
+
+Adds files to the staging area, preparing them for the next commit, by updating the repository's metadata to reflect the transition of files from untracked or modified states to the staged state. 
+
+Usage: java Tig add <filename>
+
+Parameters:
+- <filename>: Name of the file to stage. Use . to stage all files in the directory. The ignored files are skipped.
+
+Workflow (recursive):
+1. Checks if the specified file exists in the working directory. If the file is missing, an error is raised.It also validates that the file is not listed in .tigignore.
+2. Reads the current state of the file (untracked, modified, or committed).
+3. Hashes the file content using the hasher.java
+4. Moves the file to staged_files.txt if its content differs from the committed state or if it is untracked, if it was already staged, it simply updates the hash.
+
+Implementation Notes:
+- Uses Hasher.calculateHash to ensure content based tracking.
+- Ignores files listed in .tigignore using a pattern-matching mechanism.
+- Updates metadata files (untracked_files.txt, modified_files.txt) to reflect changes with the communist.java methods.
+- Handles missing files with error message. It catches IOException when accessing or modifying files, if something else goes wrong.
+- handleStateChanges:
+    - Purpose: Updates the state of a file based on its current categorization.
+    - Parameters: The file's path relative to the repository root as relativeFilePath and the hash of the file's current content as currentHash.
+    - Process: Reads untracked_files.txt, modified_files.txt, and staged_files.txt. Removes the file from its current state file and adds it to staged_files.txt.
+
+Example:
+java Tig add file.txt //Stage a specific file 
+java Tig add . //Stage all files in the directory
+
+### Commit
+
+Commit.java handles the process of saving changes to the repository by creating a new commit. It transitions staged files into a committed state, stores their metadata in a manifest, and copies file content to the backup directory. This creates a snapshot of the repository's current state.
+
+Usage: java Tig commit <message>
+
+Parameters:
+- <message>: A short description of the changes being committed.
+
+Workflow:
+1. Checks if there are files in the staging area.
+2. Generates a unique commit ID using a timestamp.
+2. Writes a manifest file in manifests.
+3. Copies the staged file content to the backup directory, using their hashes (Hasher.java) as filenames for content based storage.
+4. Updates manifest, that contains the commit metadata: file paths, timestamp, filepath, content hashes and the message.
+5. Clears the staging area and updates commited_files.txt.
+6. Updates the HEAD file to point to the new commit.
+
+Implementation Notes:
+- The commit ID is a timestamp, ensuring chronological ordering.
+- Commit metadata are written in CSV format for compatibility and ease of parsing.
+- Uses content-addressed storage to avoid duplicating file content across commits.
+- Reads and writes state files (staged_files.txt, committed_files.txt) to ensure the repository remains consistent.
+- Displays error message it the staging area is empty and catches IOException during file backup or manifest creation.
+
+Example:
+java Tig commit "Initial commit"
+
+### Status
+Displays the current status of files in the working directory. It provides insights into which files are untracked, modified, staged, or committed. This is crucial for understanding the state of the repository before executing operations like commit.
+
+Usage: java Tig status <filename>. Filename is optional, if none provided, the status of all files is displayed.
+
+Parameters:
+- <filename>: Optional. Specifies the file whose status to check. If omitted, shows the status of all files.
+
+Workflow:
+1. Read Repository's state files (listed above).
+2. File Hasching using the Hasher.java.
+3. Compares the file's current hash with its last committed or staged hash.
+4. Categorizes files into the different states.
+5. Updates metadata files to represent the repositorys current state.
+6. Display Status in three categorizations: Changes to be committed (staged files), changes not staged for commit (modified files) and untracked files (files not under version control).
+
+Implementation Notes:
+- Reads metadata files (staged_files.txt, modified_files.txt) to determine file states.
+- Adds newly detected files to untracked_files.txt.
+- Uses Hasher.calculateHash to compute the current hash of each file and compare it with stored hashes.
+- If the repository is not initialized, it displays an error message. It also has an error message if the filename does not correspond to any existing files. Furtermore, it catches IOException when reading or writing metadata files.
+Example:
+java Tig status
+java Tig status file.txt
+
+### Log
+Displays a history of commits, including IDs, timestamps, and messages. This feature is essential for tracking changes and understanding the evolution of the repository.
+
+Usage: java Tig log [-N]
+
+Parameters: (Optional) Limits the output to the last N commits, the default lies by 5.
+
+Workflow:
+1. Retrieves manifest files from manifests and checks if directory exists.
+2. Reads all commit manifests and sorts them by their timestamp.
+3. Parses manifest and extracts metadata needed.
+4. Displays the latest N commits, whilst highlighting the current HEAD.
+
+Implementation Notes:
+- Uses Java's SimpleDateFormat to convert timestamps into dates.
+- If the number provided is 0, all commits are displayed.
+- Catches IOException during manifest parsing or reading. It also has different ouputs designed, if there are no commits or the repository is not initialized.
+
+Example:
+java Tig log
+java Tig log -3
+
+### Checkout
+Restores the working directory to a specific commit. It replaces the current files with the versions stored in the selected commit's manifest and removes files not tracked in that commit. This operation ensures the repository reflects the exact state of the specified commit.
+
+Usage: java Tig checkout <commit_id>
+
+Parameters:
+- <commit_id>: The ID of the commit to restore.
+
+Workflow:
+1. Ensures that directory
+2. Reads the manifest file for the specified commit. It copies the corresponding file snapshots from backup to the working directory.
+3. It clears staged_files.txt and modified_files.txt, whilst updating the commited_files.txt. Furthermore, it pdates the HEAD file to point to the commit.
+
+Implementation Notes:
+- Deletes fies not present in the target commit.
+- Warns if a required backup file is missing.
+- clearWorkingDirectory(Path root, Set<String> keepFiles): Recursively deletes all files in the working directory except those listed in keepFiles. 
+- Catches invalid commit IDs, uncommitted changes and IOException during manigest reading or file restoration.
+
+Example:
+java Tig checkout 1234567890
+
+### Diff
+Compares the working copy of a file with its last committed version. t highlights the differences, allowing the user to see what has been added, removed, or modified.
+
+Usage: java Tig diff <filename>
+
+Parameters:
+- <filename>: The file to compare.
+
+Workflow:
+1. Checks if the file exists in the working directory and habs been committed before. If not, it terminates with an error.
+2. Reads the file's content from the working directory and the backup.
+3. Performs a line-by-line comparison.
+4. Highlights differences in a unified format: Identifies added, removed, and modified lines.
+
+Implementation Notes:
+- Uses Java's List<String> and efficient file readers for comparison.
+- The last committed version of a file is identified using its hash stored in committed_files.txt.
+- Formats output with "+" for added lines and "-" accordingly.
+- compareFiles(List<String> committed, List<String> current): Performs a line-by-line comparison between the committed and current versions of the file, it iterates through both versions, identifying changes.
+- Catches IOException during file reading. It also displays error messages for not existing files or commits.
+Example:
+java Tig diff file.txt
+
+## Utility files
+### FileEntry.java
+FileEntry is a data model class that represents a single file in the repository. It encapsulates file metadata, including the file path and its associated hash.
+
+Usage: This class is used throughout the system to:
+- Represent files in metadata files like staged_files.txt and committed_files.txt.
+- Simplify file handling by encapsulating related metadata.
+
+Workflow:
+1. File Representation: Encapsulates file-related metadata into a single object for easy access and manipulation.
+2. Utility Methods:Provides getters and setters for file attributes. Implements toString() for easy serialization into text formats (e.g., CSV).
+
+Implementation Details:
+- Constructor: Accepts the filename and hash as parameters, initializing the FileEntry object.
+- Integration: Used in classes like Init, Add, and Commit to represent files during repository operations.
+- Serialization: Facilitates conversion of FileEntry objects to text format for storing in metadata files.
+
+Example:
+FileEntry entry = new FileEntry("file.txt", "a94a8fe5ccb19ba61c4c0873d391e987982fbbd3");
+System.out.println("Filename: " + entry.getFilename());
+System.out.println("Hash: " + entry.getHash());
+
+### Hasher.java
+Provides utility methods for hashing files and directories using the SHA-256 algorithm.
+
+Usage:
+Hasher hasher = new Hasher();
+String hash = hasher.calculateHash(Path.of("file.txt"));
+
+Parameters:
+- Path root: Root directory for recursive hashing.
+- Path file: Specific file to hash.
+
+Workflow:
+1. Computes SHA-256 hashes for all files in a directory (excluding .tig/).
+2. Converts hash bytes to hexadecimal strings for storage.
+3. Handles exceptions during file reading and hashing.
+
+Implementation Details:
+- Efficiency: Uses Files.walk to traverse directories efficiently.
+- Error Handling: Catches and logs errors for inaccessible files.
+
+### Communist.java
+Description: Utility class for common file operations like reading, writing, and clearing metadata files.
+
+Workflow:
+1. File Reading: Reads lines from a file into a List<String>.
+2. File Writing: Writes a List<String> to a file, overwriting existing content.
+3. Clearing Files: Truncates files to remove all content.
+
+Implementation Details:
+- Centralized utility methods reduce code duplication across classes.
+
+### Hacker.java
+Description: Hacker is a utility class that manages repository metadata, such as locating the repository root and accessing key state files. It is the backbone of many operations, providing centralized access to repository information.
+
+Usage:This class is used internally by other classes to
+    - Retrieve repository paths (e.g., .tig directory).
+    - Parse and validate repository metadata files.
+    - Manage repository-related configurations.
+
+Workflow:
+1. Repository Validation:
+    - Checks if the current directory is part of a valid repository by locating the .tig folder.
+    - Throws appropriate errors if the repository structure is invalid or missing.
+2. Metadata Management:
+    - Reads metadata files like HEAD, staged_files.txt, and committed_files.txt.
+    - Provides utility methods for creating, modifying, and deleting these files.
+3. File Path Handling:
+    - Normalizes file paths to ensure cross-platform compatibility.
+    - Resolves relative paths to absolute paths for internal consistency.
+
+Implementation Details:
+- Path Resolution: Implements findRepoRoot() to locate the root directory of the repository. Uses Files and Paths from java.nio.file for efficient file and directory management.
+- Error Handling: Catches IOException and throws descriptive error messages when repository files are missing or corrupted.
+
+Example:
+String repoRoot = Hacker.findRepoRoot();
+Map<String, Path> repoInfo = Hacker.getRepoInfo(repoRoot);
+Path stagedFilesPath = repoInfo.get("staged_files");
+
+### God.java
+Description: God is a utility class responsible for displaying messages and handling user interactions. It centralizes logging and feedback mechanisms for better consistency across the system.
+
+Usage: This class is typically called internally by other classes to:
+    - Display success, warning, or error messages.
+    - Print detailed logs in a consistent format.
+
+Workflow:
+1. Message Logging:
+    - Formats and prints success, warning, or error messages to the console.
+    - Uses ANSI escape codes for colored output.
+2. Debugging Support:
+    - Provides methods to log detailed debug information, aiding developers in tracing issues.
+
+Implementation Details:
+- ANSI Colors: Implements color-coded outputs (e.g., green for success, red for errors).
+- Error Handling: Formats exception messages for readability and logs stack traces for debugging.
+- Consistency: Ensures all output is centralized, reducing redundancy in message handling across the project.
+
+Example:
+God.logSuccess("Repository initialized successfully!");
+God.logError("Error: File not found.", new FileNotFoundException());
+
+
+## Challenges and Solutions
+File Handling: Utilizes Java's Files and Paths APIs for robust and consistent I/O operations. Paths are normalized to ensure cross-platform compatibility, enabling seamless operation across different operating systems.
+
+Hashing: Implements MessageDigest for secure and reliable SHA-256 file hashing, ensuring consistent file identification across repository states.
+
+Branch Support: Enhances the .tig directory structure to support multiple branches seamlessly, maintaining separate metadata for each branch.
+
+Existing Repository Handling: Safeguards against conflicts by clearing .tig contents when reinitializing an existing repository.
+
+Scalability: Efficiently handles large-scale operations by doing following points:
+- Recursive directory traversal for file staging and commit operations.
+- Sorting commit files by embedded timestamps for accurate chronological ordering.
+
+Ignored Files: Properly excludes files matching patterns in .tigignore, ensuring unwanted files are not added to the repository.
+
+Dynamic State Updates: Keeps metadata files (staged_files.txt, committed_files.txt, etc.) up-to-date, even during extensive operations like checkout.
+
+Performance Optimization: Efficiently hashes and categorizes large numbers of files using Files.walk and optimized file traversal algorithms.
+Handles bulk staging with minimal overhead.
+
+Uncommitted Changes:
+Prevents accidental data loss by verifying a clean working directory before critical operations like checkout, by checking if there are any files in the staging or modified stage.
+
+Deleted Files Handling:
+Manages file deletions during checkout by removing files absent in the target commit.
+
+Formatting and User Feedback:
+Outputs user-friendly logs and messages with proper spacing and formatting.
+Highlights the HEAD commit for clarity during operations like log.
+
+### Difference to Python implementation
+
+The transition from the Python implementation of tig to the Java implementation involves several notable differences in design, functionality, and execution.
+
+#### Language Paradigm and Structure
+
+The Python implementation uses functions extensively, with minimal object-oriented (oo) design. Functional programming principles dominate the architecture.
+The command-line interface (CLI) is managed using argparse, a high-level library that simplifies argument parsing and command definition.
+
+The Java implementation heavily relies on classes for encapsulating logic, adhering to OO design patterns.
+CLI management is custom-built using a command registry within the Tig class, mimicking the behavior of argparse but implemented manually.
+
+#### State Management
+
+Metadata files (e.g., staged_files.txt, committed_files.txt) are read and written using helper functions like read_file_lines and write_file.
+The state of files is managed using dictionaries (e.g., parse_files) for quick lookups and updates.
+In-memory operations are simple due to Python's dynamic nature and extensive standard library support.
+
+Metadata file management is encapsulated within classes like Hacker and Communist, with methods for reading and writing states.
+File states are managed explicitly with collections like HashMap and List, requiring more boilerplate compared to Python dictionaries.
+Java's strict typing and checked exceptions ensure more robust error handling but at the cost of additional verbosity.
+
+#### Command Implementation
+
+Each command (e.g., add, commit, checkout) is implemented as a standalone function.
+The COMMANDS dictionary maps command names to their respective functions and help messages, streamlining CLI integration.
+Functions rely on shared utility methods (e.g., hash_all, parse_files) for common tasks like hashing and state parsing.
+
+Commands are encapsulated within classes, with static methods (e.g., Add.execute, Commit.execute) handling specific functionality.
+The Tig class acts as a command registry, manually mapping command names to handler methods and their argument requirements.
+The OO approach ensures encapsulation but introduces additional complexity for simple command registration compared to Python.
+
+#### Error Handling
+
+Relies on exceptions like FileNotFoundError and built-in error messages for runtime issues.
+
+Enforces explicit exception handling with try-catch blocks for checked exceptions like IOException and FileNotFoundException.
+Exception handling adds reliability but increases code complexity.
+ 
+#### Logging and User Feedback
+
+For the python implementation feedback to the user is integrated directly into the commands using simple print statements with formatting. Libraries like colorama are used for colored output.
+
+Feedback is handled in Java with System.out.println, relying on manual ANSI codes for colored output.
+The lack of a direct equivalent to colorama requires more effort to achieve similar aesthetics.
+
+#### Workflow Differences
+- Initialization (init):
+    Both implementations create the .tig directory structure, but the Java version explicitly handles additional exception scenarios due to its strict file-handling requirements.
+- Staging (add):
+    The Python version uses recursive calls for staging multiple files, leveraging Python's dynamic function handling.
+    The Java implementation handles this explicitly within loops and ensures type safety.
+- Committing (commit):
+    Python writes commit metadata with helper functions for CSV handling.
+    Java uses classes like FileEntry and Hasher to manage commit metadata more explicitly, requiring additional code for serialization and backup management.
+- Restoring (checkout):
+    The Python implementation relies on recursive directory traversal using os.walk and dynamic file deletion.
+    The Java version uses explicit directory streams and recursive methods for cleanup and restoration.
+- Logging (log):
+    Python leverages list sorting and string formatting for displaying logs.
+    Java sorts logs explicitly and formats strings using SimpleDateFormat and StringBuilder.
+
+#### .tigignore Implementation
+
+Python leverages simple pattern matching using functions like fnmatch to exclude files during commands like add.
+Lightweight and concise due to Python's dynamic features.
+
+
+Java implements .tigignore handling within specific commands using regex or manual string matching.
+Requires more code to achieve similar functionality due to Java's verbosity.
+
+#### Performance Considerations
+Python is faster to implement but may be slower in execution for large repositories due to Python's interpreted nature.
+Relies on external libraries like argparse for robust CLI handling, reducing development effort.
+
+Java is more likely to perform better for larger repositories due to Java's compiled nature and optimized runtime.
+Requires explicit resource management, making it more robust for large-scale file operations.
+Conclusion
+The Python implementation is more concise and relies heavily on dynamic typing and high-level libraries to achieve the functionality of tig. The Java implementation, on the other hand, adheres strictly to object-oriented principles, prioritizing robustness and scalability at the cost of verbosity and complexity. The transition required rethinking design decisions to accommodate Java's static nature, stronger type system, and explicit exception handling, while still maintaining parity with the original Python functionality.
+
+### Usage of AI
+All AI-generated suggestions were critically reviewed and adapted to ensure they aligned with the project's requirements and the academic integrity guidelines.
+
+- Debugging: OpenAI (ChatGPT) was consulted for debugging specific issues. Still, usage was tried to kept here to a minimal.
+- Documentation Assistance: OpenAI (ChatGPT) provided assistance in creating the documentation, as to be able to spare some time.

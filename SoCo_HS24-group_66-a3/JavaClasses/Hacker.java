@@ -2,7 +2,11 @@ package JavaClasses;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -102,11 +106,27 @@ public class Hacker {
         }
     }
 
-    public static void main(String[] args) {
-        try {   
-            // TO implement further
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+    //ignore
+    public static List<String> getIgnored(String repoPath) throws IOException {
+        List<String> ignoreFiles = new ArrayList<>();
+        Path ignorePath = Paths.get(repoPath, ".tigignore");
+
+        
+        if (Files.exists(ignorePath)) {
+            try {
+                ignoreFiles = Files.readAllLines(ignorePath);
+                
+            } catch (IOException e) {
+                System.err.println("Failed to read .tigignore files"); throw e;}
         }
+
+        return ignoreFiles;
     }
+
+    public static boolean isIgnored(Path filePath, List<String> ignoreFiles) {
+        String filename = filePath.getFileName().toString();
+        return ignoreFiles.contains(filename);
+    }
+
+
 }
