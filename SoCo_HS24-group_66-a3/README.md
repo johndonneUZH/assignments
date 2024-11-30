@@ -672,18 +672,6 @@ Custom Extensions:
 
 The repository metadata is stored in a .tig directory that organizes commit data, file backups, and state files. This structured approach ensures seamless operation across different commands.
 
-repo/
-├── .tig/
-│   ├── HEAD                # Points to the current branch and commit
-│   ├── main/               # The default branch
-│   │   ├── manifests/      # Stores commit information (CSV files)
-│   │   ├── backup/         # Stores hashed snapshots of files
-│   │   ├── staged_files.txt
-│   │   ├── modified_files.txt
-│   │   ├── untracked_files.txt
-│   │   ├── committed_files.txt
-
-
 ### File States
 
 1. Untracked: Files detected in the directory but not yet added to version control. They remain outside the system until explicitly staged.
@@ -700,7 +688,7 @@ Initializes a new repository by creating the .tig directory structure. This is m
 Usage: java Tig init <directory>
 
 Parameters:
-- <directory>: Path to the directory where the .tig repository will be initialized. This can be an existing directory or a new one created during initialization.
+- directory: Path to the directory where the .tig repository will be initialized. This can be an existing directory or a new one created during initialization.
 
 Workflow:
 1. Verifies the existence of the target directory (<directory>). If it doesn't exist, it creates the .tig directory inside the specified directory. Furthermore, it constructs the .tig directory within <directory> to house metadata and configuration files.
@@ -724,7 +712,7 @@ Adds files to the staging area, preparing them for the next commit, by updating 
 Usage: java Tig add <filename>
 
 Parameters:
-- <filename>: Name of the file to stage. Use . to stage all files in the directory. The ignored files are skipped.
+- filename: Name of the file to stage. Use . to stage all files in the directory. The ignored files are skipped.
 
 Workflow (recursive):
 1. Checks if the specified file exists in the working directory. If the file is missing, an error is raised.It also validates that the file is not listed in .tigignore.
@@ -753,7 +741,7 @@ Commit.java handles the process of saving changes to the repository by creating 
 Usage: java Tig commit <message>
 
 Parameters:
-- <message>: A short description of the changes being committed.
+- message: A short description of the changes being committed.
 
 Workflow:
 1. Checks if there are files in the staging area.
@@ -780,7 +768,7 @@ Displays the current status of files in the working directory. It provides insig
 Usage: java Tig status <filename>. Filename is optional, if none provided, the status of all files is displayed.
 
 Parameters:
-- <filename>: Optional. Specifies the file whose status to check. If omitted, shows the status of all files.
+- filename: Optional. Specifies the file whose status to check. If omitted, shows the status of all files.
 
 Workflow:
 1. Read Repository's state files (listed above).
@@ -827,7 +815,7 @@ Restores the working directory to a specific commit. It replaces the current fil
 Usage: java Tig checkout <commit_id>
 
 Parameters:
-- <commit_id>: The ID of the commit to restore.
+- commit_id: The ID of the commit to restore.
 
 Workflow:
 1. Ensures that directory
@@ -849,7 +837,7 @@ Compares the working copy of a file with its last committed version. t highlight
 Usage: java Tig diff <filename>
 
 Parameters:
-- <filename>: The file to compare.
+- filename: The file to compare.
 
 Workflow:
 1. Checks if the file exists in the working directory and habs been committed before. If not, it terminates with an error.
