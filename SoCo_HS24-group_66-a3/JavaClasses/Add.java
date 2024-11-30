@@ -13,6 +13,8 @@ public class Add {
             String repoRoot = Hacker.findRepoRoot();
             Map<String, Path> repoInfo = Hacker.getRepoInfo(repoRoot);
 
+
+            
             // Get paths to various state files
             Path stagedPath = repoInfo.get("staged_files");
             Path untrackedPath = repoInfo.get("untracked_files");
@@ -34,6 +36,12 @@ public class Add {
                 System.err.println("Error: File '" + filename + "' not found");
                 return;
             }
+
+            // Check if file is in tigignore
+            List<String> ignoreFiles = Hacker.getIgnored(repoRoot);
+            if (Hacker.isIgnored(filePath, ignoreFiles)) {
+                System.out.println("File '" + filename + "' is ignored (listed in .tigignore).");
+                return;}
 
             // Calculate the current hash of the file
             String currentHash = hasher.calculateHash(filePath);
@@ -94,6 +102,13 @@ public class Add {
             // Remove the file from untracked and modified if present
             untrackedFiles.remove(relativeFilePath);
             modifiedFiles.remove(relativeFilePath);
+
+            // Check if file is in tigignore
+            List<String> ignoreFiles = Hacker.getIgnored(repoRoot);
+            if (Hacker.isIgnored(filePath, ignoreFiles)) {
+                stagedFiles.remove(relativeFilePath);
+                continue;
+            }
 
             // Check if the file has changed since the last commit
             String committedHash = committedFiles.get(relativeFilePath);
