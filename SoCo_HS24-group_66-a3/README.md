@@ -1,3 +1,13 @@
+# Disclaimer
+
+The **TIG project** has been implemented in two versions: **Python** and **Java**. Below is a summary of their scope and functionality:
+
+- The **Python version** includes significantly more features than the original assignment requires. These additional functionalities were added to explore the full potential of the project and experiment with enhanced capabilities.
+
+- The **Java version** implements only the features explicitly required by the assignment. This limited scope was due to **time constraints** and the prioritization of meeting the original project requirements within the given timeframe.
+
+This distinction was made to balance thorough exploration in Python and adherence to the assignment guidelines in Java.
+
 
 # TIG - A Minimalistic Version Control System
 
