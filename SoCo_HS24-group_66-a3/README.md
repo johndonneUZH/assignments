@@ -9,7 +9,7 @@ The **TIG project** has been implemented in two versions: **Python** and **Java*
 This distinction was made to balance thorough exploration in Python and adherence to the assignment guidelines in Java.
 
 
-# TIG - A Minimalistic Version Control System
+# TIG Python - A Minimalistic Version Control System
 
 TIG is a powerful yet lightweight implementation of a version control system, offering advanced operations for managing file states across branches. Unlike simpler tools, TIG provides robust support for branching, merging, and resetting, making it a practical alternative for small projects or as an educational tool to understand version control internals.
 
