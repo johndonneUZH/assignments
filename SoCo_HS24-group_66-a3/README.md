@@ -1308,21 +1308,21 @@ This utility class integrates seamlessly into repository operations, providing m
 
 ----------
 
-### **9. Uncommitted Changes**
+### **7. Uncommitted Changes**
 
 -   **Challenge:**  Prevent accidental data loss during critical operations like  `checkout`.
 -   **Solution:**  Verifies a clean working directory by checking for staged or modified files before proceeding.
 
 ----------
 
-### **10. Deleted Files Handling**
+### **8. Deleted Files Handling**
 
 -   **Challenge:**  Manage file deletions during repository restores.
 -   **Solution:**  Removes files absent in the target commit during  `checkout`  to align the working directory with the repository state.
 
 ----------
 
-### **11. Formatting and User Feedback**
+### **9. Formatting and User Feedback**
 
 -   **Challenge:**  Provide clear and user-friendly logs.
 -   **Solution:**
