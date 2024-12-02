@@ -85,6 +85,15 @@ J --> untracked_files.txt
 | [File differences](#file-diffrences) |`'tig diff <filename>'`| Displays differences between the working copy of the specified file and the last committed version. |
 | [Reset Changes](#reset-changes)             | `'tig reset --soft'`<br>`'tig reset --hard <hash>'` | `'--soft'`: Unstages the last commit but retains changes in the working directory.<br>`'--hard <hash>'`: Reverts the repository to a specific commit hash, discarding any subsequent changes.|
 
+# Operations we ran on `repo`
+![image](https://github.com/user-attachments/assets/c93fe40a-5373-4ce7-a89f-0e789cbefec7)
+![image](https://github.com/user-attachments/assets/69169405-e7fd-43ae-9c7a-7b9c3a9165ab)
+![image](https://github.com/user-attachments/assets/9327577d-a717-48be-9a76-339453cfe7b4)
+![image](https://github.com/user-attachments/assets/c2d24879-2f0b-4349-8dd8-e6e4d3ce5a53)
+![image](https://github.com/user-attachments/assets/39fc4595-963c-47d7-8ca6-2994051068ae)
+![image](https://github.com/user-attachments/assets/2ba49a2c-f549-462f-8348-dda83f900234)
+
+
 # TIG Operations: In-Depth Explanation
 
 
@@ -673,6 +682,11 @@ Our implementation was mostly based on our previous mentioned Python implementit
 ### Repository Structure
 
 Thus the structure is identical to the python version, except that in this Java version we do not support branches, the user can have only 1 branch: `main`.  
+
+# Operations we ran on `repo_java`
+![image](https://github.com/user-attachments/assets/d67e18de-d850-48a3-8bd5-af98b8969dff)
+![image](https://github.com/user-attachments/assets/59d55c2a-9883-478a-8f95-9a9e752bc5d3)
+
 
 ## Commands in Depth - Here made in seperate file in JavaClasses
 
