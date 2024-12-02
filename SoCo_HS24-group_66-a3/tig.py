@@ -574,6 +574,25 @@ def _switch(branch):
         if head == branch:  # Already on this branch
             print(f"Already on branch \33[92m{branch}\33[0m")
             return
+        else:  # Switch to the existing branch
+            # Copy the latest commit files to the working directory
+            branch_manifests = dot_tig / branch / "manifests"
+            branch_commits = sorted(os.listdir(branch_manifests))
+            latest_commit = branch_commits[-1]
+            files = read_file_lines(branch_manifests / latest_commit)
+            files = files[1:]  # Skip the header line
+            for line in files:
+                try:
+                    name, hash_code, _ = line.strip().split(",")
+                    file_path = repo_path / name
+                    backup_path = dot_tig / branch / "backup" / hash_code
+
+                    if not backup_path.exists():
+                        print(f"Error: Backup file not found at {backup_path}")
+                        continue
+                    shutil.copy(backup_path, file_path)
+                except Exception as e:
+                    print(f"Error processing file from commit: {e}")
     else:  # Create a new branch
         try:
             for commit in os.listdir(manifests):
